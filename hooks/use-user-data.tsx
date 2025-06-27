@@ -1,248 +1,123 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { doc, getDoc } from "firebase/firestore"
-import { db } from "@/lib/firebase"
-import { useAuth } from "@/hooks/use-auth"
-import type { UserData, Workout, WorkoutType } from "@/lib/types"
+import type { UserData, Workout } from "@/lib/types"
 
 interface ProgressDataPoint {
   date: string
   meters: number
 }
 
-export function useUserData(userId?: string, workoutType?: string) {
+export function useUserData(userId?: string) {
   const [userData, setUserData] = useState<UserData | null>(null)
   const [progressData, setProgressData] = useState<ProgressDataPoint[] | null>(null)
-  const { user } = useAuth()
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        let targetUserId = userId
+    // In a real app, this would be an API call with the userId
+    const fetchUserData = () => {
+      // Mock workouts for different users
+      const getMockWorkouts = (userId: string): Workout[] => {
+        const baseWorkouts = [
+          { id: "1", type: "erg", meters: 10000, date: new Date("2023-06-01"), image: "/placeholder.png" },
+          { id: "2", type: "run", meters: 8000, date: new Date("2023-06-03"), image: "/placeholder.png" },
+          { id: "3", type: "otw", meters: 12000, date: new Date("2023-06-05"), image: "/placeholder.png" },
+          { id: "4", type: "erg", meters: 9000, date: new Date("2023-06-07"), image: "/placeholder.png" },
+          { id: "5", type: "bike", meters: 15000, date: new Date("2023-06-09"), image: "/placeholder.png" },
+          { id: "6", type: "swim", meters: 5000, date: new Date("2023-06-11"), image: "/placeholder.png" },
+        ]
 
-        // If no userId provided or it's "current-user", use the logged-in user's ID
-        if (!targetUserId || targetUserId === "current-user") {
-          if (!user) {
-            setUserData(null)
-            return
-          }
-          targetUserId = user.id
-        }
+        // Modify workouts based on userId to make them unique
+        return baseWorkouts.map((workout) => ({
+          ...workout,
+          id: `${userId}-${workout.id}`,
+          meters: workout.meters + Number.parseInt(userId) * 100, // Vary meters slightly
+        }))
+      }
 
-        // Fetch user data from Firestore
-        const userRef = doc(db, "users", targetUserId)
-        const userSnap = await getDoc(userRef)
+      // Get user data from leaderboard or create default
+      let mockUserData: UserData
 
-        if (!userSnap.exists()) {
-          console.error("User not found:", targetUserId)
-          setUserData(null)
-          return
-        }
+      if (userId && userId !== "current-user") {
+        // Find user in leaderboard data
+        const leaderboardUsers = [
+          { id: "1", name: "Alex Johnson", totalMeters: 450000, deficit: 550000, topWorkoutType: "erg" },
+          { id: "2", name: "Sam Williams", totalMeters: 420000, deficit: 580000, topWorkoutType: "otw" },
+          { id: "3", name: "Jordan Smith", totalMeters: 380000, deficit: 620000, topWorkoutType: "run" },
+          { id: "4", name: "Taylor Brown", totalMeters: 350000, deficit: 650000, topWorkoutType: "erg" },
+          { id: "5", name: "Morgan Davis", totalMeters: 320000, deficit: 680000, topWorkoutType: "bike" },
+          { id: "6", name: "Casey Miller", totalMeters: 300000, deficit: 700000, topWorkoutType: "swim" },
+          { id: "7", name: "Riley Wilson", totalMeters: 280000, deficit: 720000, topWorkoutType: "lift" },
+          { id: "8", name: "Jamie Garcia", totalMeters: 250000, deficit: 750000, topWorkoutType: "erg" },
+          { id: "9", name: "Avery Martinez", totalMeters: 230000, deficit: 770000, topWorkoutType: "run" },
+          { id: "10", name: "Drew Thompson", totalMeters: 200000, deficit: 800000, topWorkoutType: "otw" },
+        ]
 
-        const firestoreData = userSnap.data()
-        const activities = firestoreData.activities || []
-
-        // Calculate total meters from activities
-        const totalMeters = activities.reduce((sum: number, activity: any) => {
-          return sum + (Number(activity.points) || 0)
-        }, 0)
-
-        // Calculate deficit (assuming 1M goal)
-        const deficit = Math.max(0, 1000000 - totalMeters)
-
-        // Calculate daily requirements
-        const daysLeft = 70 // You can make this dynamic based on challenge end date
-        const dailyRequired = Math.ceil(deficit / daysLeft)
-        const dailyRequiredWithRest = Math.ceil(deficit / (daysLeft * 6/7)) // With 1 rest day per week (6 active days out of 7)
-
-        // Calculate workout streak
-        const calculateStreak = (activities: any[]): number => {
-          if (activities.length === 0) return 0
-
-          // Get unique dates where user worked out
-          const workoutDates = new Set<string>()
-          activities.forEach((activity: any) => {
-            if (activity.date) {
-              const date = activity.date.toDate ? activity.date.toDate() : new Date(activity.date)
-              workoutDates.add(date.toDateString())
-            }
-          })
-
-          const sortedDates = Array.from(workoutDates)
-            .map(dateStr => new Date(dateStr))
-            .sort((a, b) => b.getTime() - a.getTime()) // Sort descending (most recent first)
-
-          if (sortedDates.length === 0) return 0
-
-          let streak = 0
-          const today = new Date()
-          today.setHours(0, 0, 0, 0)
-
-          // Check if user worked out today
-          const todayStr = today.toDateString()
-          const hasWorkedOutToday = sortedDates.some(date => date.toDateString() === todayStr)
-
-          if (hasWorkedOutToday) {
-            streak = 1
-            // Count consecutive days backwards from today
-            for (let i = 1; i <= 365; i++) { // Limit to 1 year to prevent infinite loop
-              const checkDate = new Date(today)
-              checkDate.setDate(today.getDate() - i)
-              const checkDateStr = checkDate.toDateString()
-              
-              const hasWorkedOutOnDate = sortedDates.some(date => date.toDateString() === checkDateStr)
-              if (hasWorkedOutOnDate) {
-                streak++
-              } else {
-                break // Streak broken
-              }
+        const user = leaderboardUsers.find((u) => u.id === userId)
+        if (user) {
+          mockUserData = {
+            id: user.id,
+            name: user.name,
+            profileImage: "/placeholder.png",
+            totalMeters: user.totalMeters,
+            deficit: user.deficit,
+            dailyRequired: Math.ceil(user.deficit / 60),
+            dailyRequiredWithRest: Math.ceil((user.deficit / 60) * 1.17),
+            topWorkoutType: user.topWorkoutType,
+            workouts: getMockWorkouts(user.id),
           }
         } else {
-            // User didn't work out today, check if they worked out yesterday
-            const yesterday = new Date(today)
-            yesterday.setDate(today.getDate() - 1)
-            const yesterdayStr = yesterday.toDateString()
-            const hasWorkedOutYesterday = sortedDates.some(date => date.toDateString() === yesterdayStr)
-
-            if (hasWorkedOutYesterday) {
-              streak = 1
-              // Count consecutive days backwards from yesterday
-              for (let i = 2; i <= 365; i++) {
-                const checkDate = new Date(today)
-                checkDate.setDate(today.getDate() - i)
-                const checkDateStr = checkDate.toDateString()
-                
-                const hasWorkedOutOnDate = sortedDates.some(date => date.toDateString() === checkDateStr)
-                if (hasWorkedOutOnDate) {
-                  streak++
-                } else {
-                  break // Streak broken
-                }
-              }
-            }
+          // Fallback for unknown user
+          mockUserData = {
+            id: userId,
+            name: "Unknown User",
+            profileImage: "/placeholder.png",
+            totalMeters: 100000,
+            deficit: 900000,
+            dailyRequired: 15000,
+            dailyRequiredWithRest: 17500,
+            topWorkoutType: "erg",
+            workouts: getMockWorkouts(userId),
           }
-
-          return streak
         }
-
-        const dayStreak = calculateStreak(activities)
-
-        // Convert activities to workout format
-        const workouts: Workout[] = activities.map((activity: any, index: number) => ({
-          id: `${targetUserId}-${index}`,
-          type: activity.activity?.toLowerCase() || "unknown",
-          meters: Number(activity.points) || 0,
-          date: activity.date?.toDate() || new Date(),
-          image: activity.images?.[0] || activity.image || "/placeholder.png"
-        })).sort((a: Workout, b: Workout) => b.date.getTime() - a.date.getTime()) // Sort by date, most recent first
-
-        // Determine top workout type
-        const workoutTypeCounts: { [key: string]: number } = {}
-        activities.forEach((activity: any) => {
-          const type = activity.activity?.toLowerCase() || "unknown"
-          workoutTypeCounts[type] = (workoutTypeCounts[type] || 0) + 1
-        })
-        const topWorkoutType = Object.keys(workoutTypeCounts).reduce((a, b) => 
-          workoutTypeCounts[a] > workoutTypeCounts[b] ? a : b, "erg"
-        ) as WorkoutType
-
-        const realUserData: UserData = {
-          id: targetUserId,
-          name: firestoreData.username || "Unknown User",
-          profileImage: "/placeholder.png", // You can add profile image support later
-          totalMeters,
-          dailyMeters: 0, // Will be calculated if needed for time-based features
-          weeklyMeters: 0, // Will be calculated if needed for time-based features
-          deficit,
-          dailyRequired,
-          dailyRequiredWithRest,
-          topWorkoutType,
-          workouts,
-          dayStreak
-        }
-
-        setUserData(realUserData)
-
-        // Generate progress data from activities
-        const progressDataPoints: ProgressDataPoint[] = []
-        const now = new Date()
-        
-        // Generate last 14 days of data
-        for (let i = 13; i >= 0; i--) {
-          const date = new Date(now)
-          date.setDate(date.getDate() - i)
-          date.setHours(0, 0, 0, 0) // Set to start of day
-          const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-          
-          // Find activities for this date
-          let dayActivities = activities.filter((activity: any) => {
-            if (!activity.date) return false
-            
-            let activityDate: Date
-            if (activity.date.toDate) {
-              // Firestore Timestamp
-              activityDate = activity.date.toDate()
-            } else if (activity.date instanceof Date) {
-              // Already a Date object
-              activityDate = activity.date
       } else {
-              // String or other format
-              activityDate = new Date(activity.date)
-            }
-            
-            // Set to start of day for comparison
-            activityDate.setHours(0, 0, 0, 0)
-            
-            return activityDate.getTime() === date.getTime()
-          })
-
-          // Filter by workout type if specified
-          if (workoutType && workoutType !== "all") {
-            dayActivities = dayActivities.filter((activity: any) => {
-              const activityType = activity.activity?.toLowerCase() || "unknown"
-              
-              // Map the workout type to the actual activity names stored in the database
-              switch (workoutType) {
-                case "otw":
-                  return activityType === "otw row" || activityType === "otw"
-                case "erg":
-                  return activityType === "erg" || activityType === "erging"
-                case "run":
-                  return activityType === "run" || activityType === "running"
-                case "bike":
-                  return activityType === "bike" || activityType === "biking"
-                case "swim":
-                  return activityType === "swim" || activityType === "swimming"
-                case "lift":
-                  return activityType === "lift" || activityType === "lifting"
-                default:
-                  return activityType === workoutType
-              }
-            })
-          }
-          
-          const dayMeters = dayActivities.reduce((sum: number, activity: any) => {
-            const points = Number(activity.points) || 0
-            return sum + points
-          }, 0)
-          
-          progressDataPoints.push({
-            date: dateStr,
-            meters: dayMeters
-          })
+        // Current user data
+        mockUserData = {
+          id: "current-user",
+          name: "Alex Johnson",
+          profileImage: "/placeholder.png",
+          totalMeters: 350000,
+          deficit: 650000,
+          dailyRequired: 10833,
+          dailyRequiredWithRest: 12639,
+          topWorkoutType: "erg",
+          workouts: getMockWorkouts("current-user"),
         }
-
-        setProgressData(progressDataPoints)
-
-      } catch (error) {
-        console.error("Error fetching user data:", error)
-        setUserData(null)
       }
+
+      // Mock progress data - vary based on user
+      const mockProgressData: ProgressDataPoint[] = [
+        { date: "Jun 1", meters: 10000 + Number.parseInt(userId || "0") * 50 },
+        { date: "Jun 2", meters: 8000 + Number.parseInt(userId || "0") * 50 },
+        { date: "Jun 3", meters: 12000 + Number.parseInt(userId || "0") * 50 },
+        { date: "Jun 4", meters: 0 },
+        { date: "Jun 5", meters: 15000 + Number.parseInt(userId || "0") * 50 },
+        { date: "Jun 6", meters: 9000 + Number.parseInt(userId || "0") * 50 },
+        { date: "Jun 7", meters: 11000 + Number.parseInt(userId || "0") * 50 },
+        { date: "Jun 8", meters: 7000 + Number.parseInt(userId || "0") * 50 },
+        { date: "Jun 9", meters: 13000 + Number.parseInt(userId || "0") * 50 },
+        { date: "Jun 10", meters: 0 },
+        { date: "Jun 11", meters: 10000 + Number.parseInt(userId || "0") * 50 },
+        { date: "Jun 12", meters: 12000 + Number.parseInt(userId || "0") * 50 },
+        { date: "Jun 13", meters: 9000 + Number.parseInt(userId || "0") * 50 },
+        { date: "Jun 14", meters: 11000 + Number.parseInt(userId || "0") * 50 },
+      ]
+
+      setUserData(mockUserData)
+      setProgressData(mockProgressData)
     }
 
     fetchUserData()
-  }, [userId, user, workoutType])
+  }, [userId])
 
   return { userData, progressData }
 }

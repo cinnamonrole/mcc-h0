@@ -9,13 +9,13 @@ interface TopThreeUsersProps {
 
 export function TopThreeUsers({ users }: TopThreeUsersProps) {
   // Ensure we have exactly 3 users, padding with null if needed
-  const paddedUsers: (UserData | null)[] = [...users]
+  const paddedUsers = [...users]
   while (paddedUsers.length < 3) {
     paddedUsers.push(null)
   }
 
-  // Get the first 3 users in their correct order (1st, 2nd, 3rd)
-  const [first, second, third] = paddedUsers
+  // Reorder to put 1st in middle, 2nd on left, 3rd on right
+  const [second, first, third] = paddedUsers
 
   return (
     <div className="relative mb-6 pt-8 pb-6">

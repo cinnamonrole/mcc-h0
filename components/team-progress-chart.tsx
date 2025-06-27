@@ -22,11 +22,11 @@ export function TeamProgressChart() {
           <Tooltip />
           {/* Daily meters */}
           <Line type="monotone" dataKey="meters" name="Daily Meters" stroke="#2563eb" strokeWidth={2} dot={false} />
-          {/* Daily average line */}
+          {/* Target line */}
           <Line
             type="monotone"
             dataKey="target"
-            name="Daily Average"
+            name="Target"
             stroke="#dc2626"
             strokeWidth={2}
             strokeDasharray="4 4"

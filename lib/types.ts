@@ -14,15 +14,9 @@ export interface UserData {
   name: string
   profileImage: string
   totalMeters: number
-  dailyMeters: number
-  weeklyMeters: number
   deficit: number
   dailyRequired: number
   dailyRequiredWithRest: number
   topWorkoutType: WorkoutType
   workouts: Workout[]
-  metersByType?: { [key: string]: number }
-  dailyMetersByType?: { [key: string]: number }
-  weeklyMetersByType?: { [key: string]: number }
-  dayStreak: number
 }

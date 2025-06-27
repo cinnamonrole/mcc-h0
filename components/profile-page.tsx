@@ -9,14 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { ChevronDown, ChevronUp, Activity, Calendar, Flame, Calculator, Plus } from "lucide-react"
+import { ChevronDown, ChevronUp, Activity, Calendar, Flame, Calculator } from "lucide-react"
 import { useUserData } from "@/hooks/use-user-data"
 import { UserProgressChart } from "@/components/user-progress-chart"
 import { WorkoutGallery } from "@/components/workout-gallery"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useLeaderboardData } from "@/hooks/use-leaderboard-data"
-import { useAuth } from "@/hooks/use-auth"
-import Link from "next/link"
 
 interface ProfilePageProps {
   userId?: string
@@ -24,30 +22,22 @@ interface ProfilePageProps {
 
 export default function ProfilePage({ userId }: ProfilePageProps) {
   const [selectedUserId, setSelectedUserId] = useState(userId || "current-user")
-  const [selectedWorkoutType, setSelectedWorkoutType] = useState<string>("all")
   const { leaderboardData } = useLeaderboardData()
   const { userData } = useUserData(selectedUserId === "current-user" ? undefined : selectedUserId)
-  const { user } = useAuth()
   const [metersPerDay, setMetersPerDay] = useState("5000")
   const [calculatedDays, setCalculatedDays] = useState<number | null>(null)
   const [isMoreStatsOpen, setIsMoreStatsOpen] = useState(false)
 
   if (!userData) {
-    return (
-      <div className="container px-4 py-6">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600 dark:text-slate-400">Loading profile data...</p>
-        </div>
-      </div>
-    )
+    return <div>Loading user data...</div>
   }
 
-  const { name, profileImage, totalMeters, deficit, dailyRequired, dailyRequiredWithRest, workouts, dayStreak } = userData
+  const { name, profileImage, totalMeters, deficit, dailyRequired, dailyRequiredWithRest, workouts } = userData
 
   const percentComplete = Math.min(100, (totalMeters / 1000000) * 100)
   const workoutCount = workouts.length
-  const daysLeft = 70 // Mock data - in real app this would be calculated
+  const daysLeft = 60 // Mock data - in real app this would be calculated
+  const dayStreak = 7 // Mock data - consecutive days with workouts
 
   const calculateDays = () => {
     const metersPerDayNum = Number.parseFloat(metersPerDay)
@@ -56,10 +46,6 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
     const days = Math.ceil(deficit / metersPerDayNum)
     setCalculatedDays(days)
   }
-
-  // Check if this is the current user and they have no workouts
-  const isCurrentUser = selectedUserId === "current-user" || selectedUserId === user?.id
-  const hasNoWorkouts = workoutCount === 0
 
   return (
     <div className="container px-4 py-6">
@@ -168,7 +154,6 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
                 <p className="text-xl font-semibold text-blue-600 dark:text-blue-400">
                   {new Intl.NumberFormat().format(dailyRequired)}m
                 </p>
-                <p className="text-xs text-slate-500 dark:text-slate-500">per day to reach goal</p>
               </CardContent>
             </Card>
 
@@ -178,7 +163,6 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
                 <p className="text-xl font-semibold text-green-600 dark:text-green-400">
                   {new Intl.NumberFormat().format(dailyRequiredWithRest)}m
                 </p>
-                <p className="text-xs text-slate-500 dark:text-slate-500">per active day (6 days/week)</p>
               </CardContent>
             </Card>
           </div>
@@ -234,21 +218,15 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
               <CardTitle className="text-xl">Meters Per Day</CardTitle>
             </CardHeader>
             <CardContent>
-              <UserProgressChart 
-                userId={selectedUserId === "current-user" ? undefined : selectedUserId}
-                workoutType={selectedWorkoutType}
-              />
+              <UserProgressChart />
 
               <div className="mt-4">
-                <Tabs value={selectedWorkoutType} onValueChange={setSelectedWorkoutType}>
-                  <TabsList className="grid grid-cols-7 gap-1">
-                    <TabsTrigger value="all" className="text-xs px-2">All</TabsTrigger>
-                    <TabsTrigger value="erg" className="text-xs px-2">Erg</TabsTrigger>
-                    <TabsTrigger value="run" className="text-xs px-2">Run</TabsTrigger>
-                    <TabsTrigger value="swim" className="text-xs px-2">Swim</TabsTrigger>
-                    <TabsTrigger value="otw" className="text-xs px-2">OTW</TabsTrigger>
-                    <TabsTrigger value="lift" className="text-xs px-2">Lift</TabsTrigger>
-                    <TabsTrigger value="bike" className="text-xs px-2">Bike</TabsTrigger>
+                <Tabs defaultValue="all">
+                  <TabsList className="grid grid-cols-4">
+                    <TabsTrigger value="all">All</TabsTrigger>
+                    <TabsTrigger value="erg">Erg</TabsTrigger>
+                    <TabsTrigger value="run">Run</TabsTrigger>
+                    <TabsTrigger value="other">Other</TabsTrigger>
                   </TabsList>
                 </Tabs>
               </div>
@@ -257,31 +235,7 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
         </TabsContent>
 
         <TabsContent value="gallery">
-          {hasNoWorkouts && isCurrentUser ? (
-            <Card>
-              <CardContent className="pt-6 text-center">
-                <div className="mb-4">
-                  <Plus className="h-12 w-12 text-slate-400 mx-auto mb-2" />
-                  <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">No workouts yet</h3>
-                  <p className="text-slate-600 dark:text-slate-400">Start your journey by adding your first workout!</p>
-                </div>
-                <Link href="/submit">
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add First Workout
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          ) : hasNoWorkouts ? (
-            <Card>
-              <CardContent className="pt-6 text-center">
-                <p className="text-slate-600 dark:text-slate-400">No workouts recorded yet.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <WorkoutGallery workouts={workouts} />
-          )}
+          <WorkoutGallery workouts={workouts} />
         </TabsContent>
       </Tabs>
     </div>
