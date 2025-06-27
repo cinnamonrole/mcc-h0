@@ -1,0 +1,222 @@
+"use client"
+
+import { useState } from "react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { ChevronDown, ChevronUp, Activity, Calendar, Flame, Calculator } from "lucide-react"
+import { useUserData } from "@/hooks/use-user-data"
+import { UserProgressChart } from "@/components/user-progress-chart"
+import { WorkoutGallery } from "@/components/workout-gallery"
+
+interface ProfilePageProps {
+  userId?: string
+}
+
+export default function ProfilePage({ userId }: ProfilePageProps) {
+  const { userData } = useUserData(userId)
+  const [metersPerDay, setMetersPerDay] = useState("5000")
+  const [calculatedDays, setCalculatedDays] = useState<number | null>(null)
+  const [isMoreStatsOpen, setIsMoreStatsOpen] = useState(false)
+
+  if (!userData) {
+    return <div>Loading user data...</div>
+  }
+
+  const { name, profileImage, totalMeters, deficit, dailyRequired, dailyRequiredWithRest, workouts } = userData
+
+  const percentComplete = Math.min(100, (totalMeters / 1000000) * 100)
+  const workoutCount = workouts.length
+  const daysLeft = 60 // Mock data - in real app this would be calculated
+  const dayStreak = 7 // Mock data - consecutive days with workouts
+
+  const calculateDays = () => {
+    const metersPerDayNum = Number.parseFloat(metersPerDay)
+    if (isNaN(metersPerDayNum) || metersPerDayNum <= 0) return
+
+    const days = Math.ceil(deficit / metersPerDayNum)
+    setCalculatedDays(days)
+  }
+
+  return (
+    <div className="container px-4 py-6">
+      {/* Profile Header */}
+      <div className="flex items-center mb-6">
+        <Avatar className="h-16 w-16 mr-4">
+          <AvatarImage src={profileImage || "/placeholder.svg"} alt={name} />
+          <AvatarFallback className="bg-blue-100 text-blue-800">{name.substring(0, 2).toUpperCase()}</AvatarFallback>
+        </Avatar>
+        <div>
+          <h1 className="text-2xl font-bold text-blue-900 dark:text-blue-100">{name}</h1>
+          <p className="text-slate-600 dark:text-slate-400">Rower</p>
+        </div>
+      </div>
+
+      {/* Main Progress Card */}
+      <Card className="mb-6">
+        <CardContent className="pt-6">
+          <div className="text-center mb-4">
+            <span className="text-4xl font-bold text-blue-700 dark:text-blue-300">
+              {new Intl.NumberFormat().format(totalMeters)}
+            </span>
+            <span className="text-lg text-slate-500 dark:text-slate-400 ml-2">meters</span>
+          </div>
+          <Progress value={percentComplete} className="h-4 mb-2" />
+          <div className="text-center">
+            <span className="text-sm text-slate-600 dark:text-slate-400">
+              {percentComplete.toFixed(1)}% of 1,000,000m goal
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Main Statistics */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className="flex items-center justify-center mb-2">
+              <Activity className="h-5 w-5 text-blue-600" />
+            </div>
+            <p className="text-2xl font-bold text-slate-800 dark:text-slate-200">{workoutCount}</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">Workouts</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className="flex items-center justify-center mb-2">
+              <Calendar className="h-5 w-5 text-orange-600" />
+            </div>
+            <p className="text-2xl font-bold text-slate-800 dark:text-slate-200">{daysLeft}</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">Days Left</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className="flex items-center justify-center mb-2">
+              <Flame className="h-5 w-5 text-red-600" />
+            </div>
+            <p className="text-2xl font-bold text-slate-800 dark:text-slate-200">{dayStreak}</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">Day Streak</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* More Statistics - Collapsible */}
+      <Collapsible open={isMoreStatsOpen} onOpenChange={setIsMoreStatsOpen} className="mb-6">
+        <CollapsibleTrigger asChild>
+          <Button variant="outline" className="w-full justify-between">
+            More Statistics
+            {isMoreStatsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="space-y-4 mt-4">
+          <div className="grid grid-cols-2 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Personal Deficit</p>
+                <p className="text-xl font-semibold text-red-600 dark:text-red-400">
+                  {new Intl.NumberFormat().format(deficit)}m
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Daily Required</p>
+                <p className="text-xl font-semibold text-blue-600 dark:text-blue-400">
+                  {new Intl.NumberFormat().format(dailyRequired)}m
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="col-span-2">
+              <CardContent className="p-4">
+                <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">With 1 Rest Day/Week</p>
+                <p className="text-xl font-semibold text-green-600 dark:text-green-400">
+                  {new Intl.NumberFormat().format(dailyRequiredWithRest)}m
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Calculator */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Calculator className="h-5 w-5" />
+                Completion Calculator
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-end gap-2 mb-4">
+                <div className="flex-1">
+                  <Label htmlFor="meters-per-day" className="text-sm">
+                    If I row this many meters per day:
+                  </Label>
+                  <Input
+                    id="meters-per-day"
+                    type="number"
+                    min="1"
+                    value={metersPerDay}
+                    onChange={(e) => setMetersPerDay(e.target.value)}
+                  />
+                </div>
+                <Button onClick={calculateDays} className="mb-[2px]">
+                  Calculate
+                </Button>
+              </div>
+
+              {calculatedDays !== null && (
+                <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg text-center">
+                  <p className="text-sm text-slate-600 dark:text-slate-400">You will complete the challenge in:</p>
+                  <p className="text-xl font-semibold text-blue-800 dark:text-blue-200">{calculatedDays} days</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </CollapsibleContent>
+      </Collapsible>
+
+      {/* Charts and Gallery */}
+      <Tabs defaultValue="progress" className="mb-6">
+        <TabsList className="grid grid-cols-2 mb-4">
+          <TabsTrigger value="progress">Progress</TabsTrigger>
+          <TabsTrigger value="gallery">Workout Gallery</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="progress">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl">Meters Per Day</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <UserProgressChart />
+
+              <div className="mt-4">
+                <Tabs defaultValue="all">
+                  <TabsList className="grid grid-cols-4">
+                    <TabsTrigger value="all">All</TabsTrigger>
+                    <TabsTrigger value="erg">Erg</TabsTrigger>
+                    <TabsTrigger value="run">Run</TabsTrigger>
+                    <TabsTrigger value="other">Other</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="gallery">
+          <WorkoutGallery workouts={workouts} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}

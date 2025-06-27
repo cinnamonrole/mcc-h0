@@ -1,0 +1,39 @@
+"use client"
+
+import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
+import { useTeamData } from "@/hooks/use-team-data"
+
+export function TeamProgressChart() {
+  const { progressData } = useTeamData()
+
+  if (!progressData || progressData.length === 0) {
+    return <div>Loading chart data...</div>
+  }
+
+  const maxMeters = Math.max(...progressData.map((d) => d.meters)) * 1.1
+
+  return (
+    <div className="w-full h-[300px]">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={progressData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" />
+          <YAxis domain={[0, maxMeters]} />
+          <Tooltip />
+          {/* Daily meters */}
+          <Line type="monotone" dataKey="meters" name="Daily Meters" stroke="#2563eb" strokeWidth={2} dot={false} />
+          {/* Target line */}
+          <Line
+            type="monotone"
+            dataKey="target"
+            name="Target"
+            stroke="#dc2626"
+            strokeWidth={2}
+            strokeDasharray="4 4"
+            dot={false}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
