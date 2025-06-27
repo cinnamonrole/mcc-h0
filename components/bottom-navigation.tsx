@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, Upload, BarChart2, User, LogOut, Shield } from "lucide-react"
+import { Home, Upload, BarChart2, User, LogOut } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -79,17 +79,6 @@ export default function BottomNavigation() {
               <LogOut className="h-5 w-5" />
               <span className="text-xs mt-1">Sign Up</span>
             </Button>
-          )}
-
-          {/* Hidden Admin Access - only visible in dev */}
-          {process.env.NODE_ENV === "development" && (
-            <Link
-              href="/admin"
-              className="flex flex-col items-center justify-center w-full h-full text-slate-400 hover:text-red-600 dark:hover:text-red-400"
-            >
-              <Shield className="h-4 w-4" />
-              <span className="text-xs mt-1">Admin</span>
-            </Link>
           )}
         </nav>
       </div>

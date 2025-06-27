@@ -10,18 +10,17 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
-import { Eye, Users, Trophy, Upload } from "lucide-react"
+import { Eye, EyeOff, Users, Trophy, Upload } from "lucide-react"
 import Link from "next/link"
 
-export default function SignupPage() {
-  const { signUp, continueAsGuest } = useAuth()
+export default function SigninPage() {
+  const { signIn, continueAsGuest } = useAuth()
   const { toast } = useToast()
   const [formData, setFormData] = useState({
-    name: "",
     email: "",
     password: "",
-    confirmPassword: "",
   })
+  const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,40 +30,20 @@ export default function SignupPage() {
     })
   }
 
-  const handleSignup = async (e: React.FormEvent) => {
+  const handleSignin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
-    if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Password mismatch",
-        description: "Passwords do not match",
-        variant: "destructive",
-      })
-      setIsLoading(false)
-      return
-    }
-
-    if (formData.password.length < 6) {
-      toast({
-        title: "Password too short",
-        description: "Password must be at least 6 characters",
-        variant: "destructive",
-      })
-      setIsLoading(false)
-      return
-    }
-
     try {
-      await signUp(formData.name, formData.email, formData.password)
+      await signIn(formData.email, formData.password)
       toast({
-        title: "Account created!",
-        description: "Welcome to the Million Meters Challenge",
+        title: "Welcome back!",
+        description: "Successfully signed in to your account",
       })
     } catch (error) {
       toast({
-        title: "Signup failed",
-        description: "Please try again",
+        title: "Sign in failed",
+        description: "Invalid email or password",
         variant: "destructive",
       })
     }
@@ -88,30 +67,17 @@ export default function SignupPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
             <Trophy className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-blue-900 dark:text-blue-100">Million Meters</h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-2">Join the rowing challenge</p>
+          <h1 className="text-3xl font-bold text-blue-900 dark:text-blue-100">Welcome Back</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-2">Sign in to your Million Meters account</p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Create Account</CardTitle>
-            <CardDescription>Join your team in the Million Meters Challenge</CardDescription>
+            <CardTitle>Sign In</CardTitle>
+            <CardDescription>Enter your credentials to access your account</CardDescription>
           </CardHeader>
-          <form onSubmit={handleSignup}>
+          <form onSubmit={handleSignin}>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  type="text"
-                  placeholder="Enter your full name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -127,33 +93,53 @@ export default function SignupPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="Create a password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    required
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-slate-400" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-slate-400" />
+                    )}
+                  </Button>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  placeholder="Confirm your password"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  required
-                />
+              <div className="flex items-center justify-between">
+                <div className="text-sm">
+                  <button
+                    type="button"
+                    className="text-blue-600 hover:text-blue-500 hover:underline"
+                    onClick={() => {
+                      toast({
+                        title: "Password Reset",
+                        description: "Password reset functionality would be implemented here",
+                      })
+                    }}
+                  >
+                    Forgot your password?
+                  </button>
+                </div>
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Creating Account..." : "Create Account"}
+                {isLoading ? "Signing In..." : "Sign In"}
               </Button>
 
               <div className="relative w-full">
@@ -187,16 +173,16 @@ export default function SignupPage() {
               <div className="flex items-center text-sm text-slate-600 dark:text-slate-400">
                 <Upload className="h-4 w-4 mr-2 text-slate-400" />
                 <span className="line-through">Submit workouts</span>
-                <span className="ml-2 text-xs">(Sign up required)</span>
+                <span className="ml-2 text-xs">(Account required)</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <p className="text-center text-xs text-slate-500 mt-6">
-          Already have an account?{" "}
-          <Link href="/signin" className="text-blue-600 hover:underline">
-            Sign in here
+          Don't have an account?{" "}
+          <Link href="/signup" className="text-blue-600 hover:underline">
+            Sign up here
           </Link>
         </p>
       </div>

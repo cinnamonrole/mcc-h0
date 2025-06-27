@@ -11,8 +11,8 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   const { isAuthenticated } = useAuth()
   const pathname = usePathname()
 
-  // If not authenticated and not on signup page, show signup
-  if (!isAuthenticated && pathname !== "/signup") {
+  // If not authenticated and not on auth pages, show signup
+  if (!isAuthenticated && pathname !== "/signup" && pathname !== "/signin") {
     return <SignupPage />
   }
 
@@ -26,6 +26,6 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
     )
   }
 
-  // For signup page when not authenticated
+  // For auth pages when not authenticated
   return <>{children}</>
 }
