@@ -7,7 +7,7 @@ export default function Home() {
     <div className="container px-4 py-6">
       {/* McLean Crew Header Card */}
       <Card className="mb-6 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 border-blue-200 dark:border-blue-800">
-        <CardContent className="py-6">
+        <CardContent className="py-1">
           <div className="flex flex-col items-center text-center">
             <div className="mb-0">
               <img src="/images/mclean-crew-logo.png" alt="McLean Crew Logo" className="h-40 w-40 object-contain" />
