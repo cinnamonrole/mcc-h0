@@ -28,6 +28,8 @@ export default function TeamOverview() {
 
   return (
     <div className="space-y-6">
+      <RecentWorkoutsGallery />
+
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-xl text-center">Team Progress</CardTitle>
@@ -66,8 +68,6 @@ export default function TeamOverview() {
           </div>
         </CardContent>
       </Card>
-
-      <RecentWorkoutsGallery />
 
       <Card>
         <CardHeader className="pb-2">

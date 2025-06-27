@@ -70,6 +70,103 @@ export function useLeaderboardData() {
           const dailyRequired = Math.ceil(deficit / daysLeft)
           const dailyRequiredWithRest = Math.ceil((deficit / daysLeft) * 1.17) // With 1 rest day per week
 
+          // Calculate daily and weekly meters
+          const now = new Date()
+          const startOfDay = new Date(now)
+          startOfDay.setHours(0, 0, 0, 0)
+          
+          const startOfWeek = new Date(now)
+          startOfWeek.setDate(now.getDate() - now.getDay()) // Start of current week (Sunday)
+          startOfWeek.setHours(0, 0, 0, 0)
+
+          const dailyMeters = activities
+            .filter((activity: any) => {
+              if (!activity.date) return false
+              const activityDate = activity.date.toDate ? activity.date.toDate() : new Date(activity.date)
+              return activityDate >= startOfDay
+            })
+            .reduce((sum: number, activity: any) => sum + (Number(activity.points) || 0), 0)
+
+          const weeklyMeters = activities
+            .filter((activity: any) => {
+              if (!activity.date) return false
+              const activityDate = activity.date.toDate ? activity.date.toDate() : new Date(activity.date)
+              return activityDate >= startOfWeek
+            })
+            .reduce((sum: number, activity: any) => sum + (Number(activity.points) || 0), 0)
+
+          // Calculate day streak
+          const calculateStreak = (activities: any[]): number => {
+            if (activities.length === 0) return 0
+
+            // Get unique dates where user worked out
+            const workoutDates = new Set<string>()
+            activities.forEach((activity: any) => {
+              if (activity.date) {
+                const date = activity.date.toDate ? activity.date.toDate() : new Date(activity.date)
+                workoutDates.add(date.toDateString())
+              }
+            })
+
+            const sortedDates = Array.from(workoutDates)
+              .map(dateStr => new Date(dateStr))
+              .sort((a, b) => b.getTime() - a.getTime()) // Sort descending (most recent first)
+
+            if (sortedDates.length === 0) return 0
+
+            let streak = 0
+            const today = new Date()
+            today.setHours(0, 0, 0, 0)
+
+            // Check if user worked out today
+            const todayStr = today.toDateString()
+            const hasWorkedOutToday = sortedDates.some(date => date.toDateString() === todayStr)
+
+            if (hasWorkedOutToday) {
+              streak = 1
+              // Count consecutive days backwards from today
+              for (let i = 1; i <= 365; i++) {
+                const checkDate = new Date(today)
+                checkDate.setDate(today.getDate() - i)
+                const checkDateStr = checkDate.toDateString()
+                
+                const hasWorkedOutOnDate = sortedDates.some(date => date.toDateString() === checkDateStr)
+                if (hasWorkedOutOnDate) {
+                  streak++
+                } else {
+                  break // Streak broken
+                }
+              }
+            } else {
+              // User didn't work out today, check if they worked out yesterday
+              const yesterday = new Date(today)
+              yesterday.setDate(today.getDate() - 1)
+              const yesterdayStr = yesterday.toDateString()
+              const hasWorkedOutYesterday = sortedDates.some(date => date.toDateString() === yesterdayStr)
+
+              if (hasWorkedOutYesterday) {
+                streak = 1
+                // Count consecutive days backwards from yesterday
+                for (let i = 2; i <= 365; i++) {
+                  const checkDate = new Date(today)
+                  checkDate.setDate(today.getDate() - i)
+                  const checkDateStr = checkDate.toDateString()
+                  
+                  const hasWorkedOutOnDate = sortedDates.some(date => date.toDateString() === checkDateStr)
+                  if (hasWorkedOutOnDate) {
+                    streak++
+                  } else {
+                    break // Streak broken
+                  }
+                }
+              }
+            }
+
+            return streak
+          }
+
+          const dayStreak = calculateStreak(activities)
+
           // Determine top workout type
           const workoutTypeCounts: { [key: string]: number } = {}
           activities.forEach((activity: any) => {
@@ -85,12 +182,15 @@ export function useLeaderboardData() {
             name: firestoreData.username || "Unknown User",
             profileImage: "/placeholder.png", // You can add profile image support later
             totalMeters,
+            dailyMeters,
+            weeklyMeters,
             deficit,
             dailyRequired,
             dailyRequiredWithRest,
             topWorkoutType,
             workouts: [], // We don't need full workout data for leaderboard
-            metersByType // Add this for filtering
+            metersByType, // Add this for filtering
+            dayStreak
           }
 
           users.push(userData)
