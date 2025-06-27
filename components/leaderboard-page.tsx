@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export default function LeaderboardPage() {
   const { leaderboardData } = useLeaderboardData()
   const [activeTab, setActiveTab] = useState<WorkoutType | "all">("all")
-  const [timeFilter, setTimeFilter] = useState<"total" | "weekly" | "daily">("total")
 
   if (!leaderboardData) {
     return <div>Loading leaderboard data...</div>
@@ -50,7 +49,7 @@ export default function LeaderboardPage() {
     <div className="container px-4 py-6">
       <h1 className="text-2xl font-bold text-blue-900 dark:text-blue-100 mb-6">Leaderboard</h1>
 
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <div className="mb-6">
         <Select defaultValue="all" onValueChange={(value) => setActiveTab(value as WorkoutType | "all")}>
           <SelectTrigger>
             <SelectValue placeholder="Filter by workout type" />
@@ -64,17 +63,6 @@ export default function LeaderboardPage() {
             <SelectItem value="otw">On The Water</SelectItem>
             <SelectItem value="lift">Lifting</SelectItem>
             <SelectItem value="other">Other</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select defaultValue="total" onValueChange={(value) => setTimeFilter(value as "total" | "weekly" | "daily")}>
-          <SelectTrigger>
-            <SelectValue placeholder="Time period" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="total">Total</SelectItem>
-            <SelectItem value="weekly">Weekly</SelectItem>
-            <SelectItem value="daily">Daily</SelectItem>
           </SelectContent>
         </Select>
       </div>
