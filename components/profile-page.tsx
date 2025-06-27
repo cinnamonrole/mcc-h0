@@ -233,7 +233,7 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
               <CardTitle className="text-xl">Meters Per Day</CardTitle>
             </CardHeader>
             <CardContent>
-              <UserProgressChart />
+              <UserProgressChart userId={selectedUserId === "current-user" ? undefined : selectedUserId} />
 
               <div className="mt-4">
                 <Tabs defaultValue="all">

@@ -172,16 +172,34 @@ export function useUserData(userId?: string) {
         for (let i = 13; i >= 0; i--) {
           const date = new Date(now)
           date.setDate(date.getDate() - i)
+          date.setHours(0, 0, 0, 0) // Set to start of day
           const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
           
           // Find activities for this date
           const dayActivities = activities.filter((activity: any) => {
-            const activityDate = activity.date?.toDate() || new Date()
-            return activityDate.toDateString() === date.toDateString()
+            if (!activity.date) return false
+            
+            let activityDate: Date
+            if (activity.date.toDate) {
+              // Firestore Timestamp
+              activityDate = activity.date.toDate()
+            } else if (activity.date instanceof Date) {
+              // Already a Date object
+              activityDate = activity.date
+            } else {
+              // String or other format
+              activityDate = new Date(activity.date)
+            }
+            
+            // Set to start of day for comparison
+            activityDate.setHours(0, 0, 0, 0)
+            
+            return activityDate.getTime() === date.getTime()
           })
           
           const dayMeters = dayActivities.reduce((sum: number, activity: any) => {
-            return sum + (Number(activity.points) || 0)
+            const points = Number(activity.points) || 0
+            return sum + points
           }, 0)
           
           progressDataPoints.push({
