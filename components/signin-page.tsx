@@ -12,10 +12,12 @@ import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
 import { Eye, EyeOff, Users, Trophy, Upload } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 export default function SigninPage() {
   const { signIn, continueAsGuest } = useAuth()
   const { toast } = useToast()
+  const router = useRouter()
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -40,10 +42,23 @@ export default function SigninPage() {
         title: "Welcome back!",
         description: "Successfully signed in to your account",
       })
-    } catch (error) {
+      router.push("/")
+    } catch (error: any) {
+      let errorMessage = "Sign in failed. Please try again."
+      
+      if (error.message.includes("user-not-found") || error.message.includes("wrong-password") || error.message.includes("invalid-credential")) {
+        errorMessage = "Invalid email or password."
+      } else if (error.message.includes("invalid-email")) {
+        errorMessage = "Invalid email format."
+      } else if (error.message.includes("user-disabled")) {
+        errorMessage = "This account has been disabled."
+      } else if (error.message.includes("too-many-requests")) {
+        errorMessage = "Too many failed attempts. Please try again later."
+      }
+      
       toast({
         title: "Sign in failed",
-        description: "Invalid email or password",
+        description: errorMessage,
         variant: "destructive",
       })
     }
@@ -57,6 +72,7 @@ export default function SigninPage() {
       title: "Welcome, Guest!",
       description: "You can view the home page and leaderboard. Sign up to submit workouts!",
     })
+    router.push("/")
   }
 
   return (

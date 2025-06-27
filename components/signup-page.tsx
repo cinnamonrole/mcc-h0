@@ -12,10 +12,12 @@ import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
 import { Eye, Users, Trophy, Upload } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 export default function SignupPage() {
   const { signUp, continueAsGuest } = useAuth()
   const { toast } = useToast()
+  const router = useRouter()
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -59,12 +61,24 @@ export default function SignupPage() {
       await signUp(formData.name, formData.email, formData.password)
       toast({
         title: "Account created!",
-        description: "Welcome to the Million Meters Challenge",
+        description: "Please check your email to verify your account before signing in.",
       })
-    } catch (error) {
+      // Redirect to signin page after successful signup
+      router.push("/signin")
+    } catch (error: any) {
+      let errorMessage = "Signup failed. Please try again."
+      
+      if (error.message.includes("email-already-in-use")) {
+        errorMessage = "Email already in use. Please use a different email or sign in."
+      } else if (error.message.includes("invalid-email")) {
+        errorMessage = "Invalid email format."
+      } else if (error.message.includes("weak-password")) {
+        errorMessage = "Password is too weak. Please choose a stronger password."
+      }
+      
       toast({
         title: "Signup failed",
-        description: "Please try again",
+        description: errorMessage,
         variant: "destructive",
       })
     }
@@ -78,6 +92,7 @@ export default function SignupPage() {
       title: "Welcome, Guest!",
       description: "You can view the home page and leaderboard. Sign up to submit workouts!",
     })
+    router.push("/")
   }
 
   return (

@@ -1,6 +1,16 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signOut as firebaseSignOut,
+  onAuthStateChanged,
+  sendEmailVerification,
+  User as FirebaseUser
+} from "firebase/auth"
+import { doc, setDoc, getDoc } from "firebase/firestore"
+import { auth, db } from "@/lib/firebase"
 
 interface User {
   id: string
@@ -26,69 +36,97 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
-    // Check for existing auth state in localStorage
-    const savedUser = localStorage.getItem("user")
-    const savedIsGuest = localStorage.getItem("isGuest")
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        // User is signed in (no email verification required)
+        try {
+          const userRef = doc(db, "users", firebaseUser.uid)
+          const userSnap = await getDoc(userRef)
+          
+          if (userSnap.exists()) {
+            const userData = userSnap.data()
+            const appUser: User = {
+              id: firebaseUser.uid,
+              name: userData.username,
+              email: firebaseUser.email || ""
+            }
+            setUser(appUser)
+            setIsAuthenticated(true)
+            setIsGuest(false)
+          } else {
+            // User document doesn't exist, sign them out
+            await firebaseSignOut(auth)
+            setUser(null)
+            setIsAuthenticated(false)
+            setIsGuest(false)
+          }
+        } catch (error) {
+          console.error("Error fetching user data:", error)
+          await firebaseSignOut(auth)
+          setUser(null)
+          setIsAuthenticated(false)
+          setIsGuest(false)
+        }
+      } else {
+        // User is signed out
+        setUser(null)
+        setIsAuthenticated(false)
+        setIsGuest(false)
+      }
+    })
 
-    if (savedUser) {
-      setUser(JSON.parse(savedUser))
-      setIsAuthenticated(true)
-    } else if (savedIsGuest === "true") {
-      setIsGuest(true)
-      setIsAuthenticated(true)
-    }
+    return () => unsubscribe()
   }, [])
 
   const signUp = async (name: string, email: string, password: string) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+      // Create user with Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      const firebaseUser = userCredential.user
 
-    const newUser = {
-      id: Date.now().toString(),
-      name,
-      email,
+      // Create user document in Firestore
+      await setDoc(doc(db, "users", firebaseUser.uid), {
+        username: name,
+        email: email,
+        activities: [],
+        createdAt: new Date()
+      })
+
+      // Optionally send email verification (but not required)
+      // await sendEmailVerification(firebaseUser)
+
+      // User will be automatically signed in and onAuthStateChanged will handle the rest
+    } catch (error: any) {
+      console.error("Signup error:", error)
+      throw new Error(error.message || "Signup failed")
     }
-
-    setUser(newUser)
-    setIsAuthenticated(true)
-    setIsGuest(false)
-
-    localStorage.setItem("user", JSON.stringify(newUser))
-    localStorage.removeItem("isGuest")
   }
 
   const signIn = async (email: string, password: string) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    const user = {
-      id: "1",
-      name: "Alex Johnson",
-      email,
+    try {
+      await signInWithEmailAndPassword(auth, email, password)
+      // onAuthStateChanged will handle the rest
+    } catch (error: any) {
+      console.error("Signin error:", error)
+      throw new Error(error.message || "Signin failed")
     }
-
-    setUser(user)
-    setIsAuthenticated(true)
-    setIsGuest(false)
-
-    localStorage.setItem("user", JSON.stringify(user))
-    localStorage.removeItem("isGuest")
   }
 
-  const signOut = () => {
-    setUser(null)
-    setIsAuthenticated(false)
-    setIsGuest(false)
-    localStorage.removeItem("user")
-    localStorage.removeItem("isGuest")
+  const signOut = async () => {
+    try {
+      await firebaseSignOut(auth)
+      setUser(null)
+      setIsAuthenticated(false)
+      setIsGuest(false)
+    } catch (error) {
+      console.error("Signout error:", error)
+    }
   }
 
   const continueAsGuest = () => {
     setIsGuest(true)
     setIsAuthenticated(true)
     setUser(null)
-    localStorage.setItem("isGuest", "true")
-    localStorage.removeItem("user")
   }
 
   return (

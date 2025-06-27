@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 
 export default function BottomNavigation() {
   const pathname = usePathname()
-  const { isGuest, signOut } = useAuth()
+  const { isGuest, signOut, isAuthenticated } = useAuth()
 
   // Don't show navigation on admin page
   if (pathname === "/admin") {
@@ -69,7 +69,7 @@ export default function BottomNavigation() {
             )
           })}
 
-          {isGuest && (
+          {isAuthenticated && (
             <Button
               variant="ghost"
               size="sm"
@@ -77,7 +77,7 @@ export default function BottomNavigation() {
               className="flex flex-col items-center justify-center w-full h-full text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400"
             >
               <LogOut className="h-5 w-5" />
-              <span className="text-xs mt-1">Sign Up</span>
+              <span className="text-xs mt-1">{isGuest ? "Sign Up" : "Sign Out"}</span>
             </Button>
           )}
         </nav>
