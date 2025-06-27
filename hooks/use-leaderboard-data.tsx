@@ -1,129 +1,73 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { collection, getDocs } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 import type { UserData } from "@/lib/types"
 
 export function useLeaderboardData() {
   const [leaderboardData, setLeaderboardData] = useState<UserData[] | null>(null)
 
   useEffect(() => {
-    // In a real app, this would be an API call
-    const fetchLeaderboardData = () => {
-      // Mock data
-      const mockLeaderboardData: UserData[] = [
-        {
-          id: "1",
-          name: "Alex Johnson",
-          profileImage: "/placeholder.png",
-          totalMeters: 450000,
-          deficit: 550000,
-          dailyRequired: 9167,
-          dailyRequiredWithRest: 10695,
-          topWorkoutType: "erg",
-          workouts: [],
-        },
-        {
-          id: "2",
-          name: "Sam Williams",
-          profileImage: "/placeholder.png",
-          totalMeters: 420000,
-          deficit: 580000,
-          dailyRequired: 9667,
-          dailyRequiredWithRest: 11278,
-          topWorkoutType: "otw",
-          workouts: [],
-        },
-        {
-          id: "3",
-          name: "Jordan Smith",
-          profileImage: "/placeholder.png",
-          totalMeters: 380000,
-          deficit: 620000,
-          dailyRequired: 10333,
-          dailyRequiredWithRest: 12056,
-          topWorkoutType: "run",
-          workouts: [],
-        },
-        {
-          id: "4",
-          name: "Taylor Brown",
-          profileImage: "/placeholder.png",
-          totalMeters: 350000,
-          deficit: 650000,
-          dailyRequired: 10833,
-          dailyRequiredWithRest: 12639,
-          topWorkoutType: "erg",
-          workouts: [],
-        },
-        {
-          id: "5",
-          name: "Morgan Davis",
-          profileImage: "/placeholder.png",
-          totalMeters: 320000,
-          deficit: 680000,
-          dailyRequired: 11333,
-          dailyRequiredWithRest: 13222,
-          topWorkoutType: "bike",
-          workouts: [],
-        },
-        {
-          id: "6",
-          name: "Casey Miller",
-          profileImage: "/placeholder.png",
-          totalMeters: 300000,
-          deficit: 700000,
-          dailyRequired: 11667,
-          dailyRequiredWithRest: 13611,
-          topWorkoutType: "swim",
-          workouts: [],
-        },
-        {
-          id: "7",
-          name: "Riley Wilson",
-          profileImage: "/placeholder.png",
-          totalMeters: 280000,
-          deficit: 720000,
-          dailyRequired: 12000,
-          dailyRequiredWithRest: 14000,
-          topWorkoutType: "lift",
-          workouts: [],
-        },
-        {
-          id: "8",
-          name: "Jamie Garcia",
-          profileImage: "/placeholder.png",
-          totalMeters: 250000,
-          deficit: 750000,
-          dailyRequired: 12500,
-          dailyRequiredWithRest: 14583,
-          topWorkoutType: "erg",
-          workouts: [],
-        },
-        {
-          id: "9",
-          name: "Avery Martinez",
-          profileImage: "/placeholder.png",
-          totalMeters: 230000,
-          deficit: 770000,
-          dailyRequired: 12833,
-          dailyRequiredWithRest: 14972,
-          topWorkoutType: "run",
-          workouts: [],
-        },
-        {
-          id: "10",
-          name: "Drew Thompson",
-          profileImage: "/placeholder.png",
-          totalMeters: 200000,
-          deficit: 800000,
-          dailyRequired: 13333,
-          dailyRequiredWithRest: 15556,
-          topWorkoutType: "otw",
-          workouts: [],
-        },
-      ]
+    const fetchLeaderboardData = async () => {
+      try {
+        // Fetch all users from Firestore
+        const usersRef = collection(db, "users")
+        const querySnapshot = await getDocs(usersRef)
 
-      setLeaderboardData(mockLeaderboardData)
+        const users: UserData[] = []
+
+        querySnapshot.forEach((doc) => {
+          const firestoreData = doc.data()
+          const activities = firestoreData.activities || []
+
+          // Calculate total meters from activities
+          const totalMeters = activities.reduce((sum: number, activity: any) => {
+            return sum + (Number(activity.points) || 0)
+          }, 0)
+
+          // Calculate deficit (assuming 1M goal)
+          const deficit = Math.max(0, 1000000 - totalMeters)
+
+          // Calculate daily requirements
+          const daysLeft = 60 // You can make this dynamic based on challenge end date
+          const dailyRequired = Math.ceil(deficit / daysLeft)
+          const dailyRequiredWithRest = Math.ceil((deficit / daysLeft) * 1.17) // With 1 rest day per week
+
+          // Determine top workout type
+          const workoutTypeCounts: { [key: string]: number } = {}
+          activities.forEach((activity: any) => {
+            const type = activity.activity?.toLowerCase() || "unknown"
+            workoutTypeCounts[type] = (workoutTypeCounts[type] || 0) + 1
+          })
+          const topWorkoutType = Object.keys(workoutTypeCounts).reduce((a, b) => 
+            workoutTypeCounts[a] > workoutTypeCounts[b] ? a : b, "erg"
+          )
+
+          const userData: UserData = {
+            id: doc.id,
+            name: firestoreData.username || "Unknown User",
+            profileImage: "/placeholder.png", // You can add profile image support later
+            totalMeters,
+            deficit,
+            dailyRequired,
+            dailyRequiredWithRest,
+            topWorkoutType,
+            workouts: [] // We don't need full workout data for leaderboard
+          }
+
+          users.push(userData)
+        })
+
+        // Sort by total meters (descending)
+        users.sort((a, b) => b.totalMeters - a.totalMeters)
+
+        setLeaderboardData(users)
+
+      } catch (error) {
+        console.error("Error fetching leaderboard data:", error)
+        setLeaderboardData(null)
+      }
     }
 
     fetchLeaderboardData()

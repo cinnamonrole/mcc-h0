@@ -9,12 +9,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { ChevronDown, ChevronUp, Activity, Calendar, Flame, Calculator } from "lucide-react"
+import { ChevronDown, ChevronUp, Activity, Calendar, Flame, Calculator, Plus } from "lucide-react"
 import { useUserData } from "@/hooks/use-user-data"
 import { UserProgressChart } from "@/components/user-progress-chart"
 import { WorkoutGallery } from "@/components/workout-gallery"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useLeaderboardData } from "@/hooks/use-leaderboard-data"
+import { useAuth } from "@/hooks/use-auth"
+import Link from "next/link"
 
 interface ProfilePageProps {
   userId?: string
@@ -24,12 +26,20 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
   const [selectedUserId, setSelectedUserId] = useState(userId || "current-user")
   const { leaderboardData } = useLeaderboardData()
   const { userData } = useUserData(selectedUserId === "current-user" ? undefined : selectedUserId)
+  const { user } = useAuth()
   const [metersPerDay, setMetersPerDay] = useState("5000")
   const [calculatedDays, setCalculatedDays] = useState<number | null>(null)
   const [isMoreStatsOpen, setIsMoreStatsOpen] = useState(false)
 
   if (!userData) {
-    return <div>Loading user data...</div>
+    return (
+      <div className="container px-4 py-6">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-slate-600 dark:text-slate-400">Loading profile data...</p>
+        </div>
+      </div>
+    )
   }
 
   const { name, profileImage, totalMeters, deficit, dailyRequired, dailyRequiredWithRest, workouts } = userData
@@ -46,6 +56,10 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
     const days = Math.ceil(deficit / metersPerDayNum)
     setCalculatedDays(days)
   }
+
+  // Check if this is the current user and they have no workouts
+  const isCurrentUser = selectedUserId === "current-user" || selectedUserId === user?.id
+  const hasNoWorkouts = workoutCount === 0
 
   return (
     <div className="container px-4 py-6">
@@ -235,7 +249,31 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
         </TabsContent>
 
         <TabsContent value="gallery">
-          <WorkoutGallery workouts={workouts} />
+          {hasNoWorkouts && isCurrentUser ? (
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <div className="mb-4">
+                  <Plus className="h-12 w-12 text-slate-400 mx-auto mb-2" />
+                  <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">No workouts yet</h3>
+                  <p className="text-slate-600 dark:text-slate-400">Start your journey by adding your first workout!</p>
+                </div>
+                <Link href="/submit">
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add First Workout
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ) : hasNoWorkouts ? (
+            <Card>
+              <CardContent className="pt-6 text-center">
+                <p className="text-slate-600 dark:text-slate-400">No workouts recorded yet.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <WorkoutGallery workouts={workouts} />
+          )}
         </TabsContent>
       </Tabs>
     </div>

@@ -12,14 +12,21 @@ import { Camera, Upload, Dumbbell, Bike, Waves, Rows, PersonStanding, ArrowRight
 import type { WorkoutType } from "@/lib/types"
 import { WorkoutTypeCard } from "@/components/workout-type-card"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/hooks/use-auth"
+import { doc, updateDoc, arrayUnion, Timestamp } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import { useRouter } from "next/navigation"
 
 export default function WorkoutSubmission() {
   const { toast } = useToast()
+  const { user } = useAuth()
+  const router = useRouter()
   const [selectedWorkoutType, setSelectedWorkoutType] = useState<WorkoutType>("erg")
   const [distance, setDistance] = useState("")
   const [notes, setNotes] = useState("")
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [boatType, setBoatType] = useState<"1x" | "2x">("1x")
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const workoutTypes = [
     { id: "erg" as WorkoutType, name: "Erg", icon: Rows, color: "bg-blue-100 text-blue-700" },
@@ -41,8 +48,17 @@ export default function WorkoutSubmission() {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to submit workouts",
+        variant: "destructive",
+      })
+      return
+    }
 
     if (!distance || Number.parseFloat(distance) <= 0) {
       toast({
@@ -53,16 +69,63 @@ export default function WorkoutSubmission() {
       return
     }
 
-    // Here you would normally submit to your backend
-    toast({
-      title: "Workout submitted!",
-      description: `${distance} meters of ${getWorkoutTypeName(selectedWorkoutType)} recorded.`,
-    })
+    const convertedMeters = getConvertedMeters()
+    if (convertedMeters <= 0) {
+      toast({
+        title: "Invalid conversion",
+        description: "Please check your input values",
+        variant: "destructive",
+      })
+      return
+    }
 
-    // Reset form
-    setDistance("")
-    setNotes("")
-    setImagePreview(null)
+    setIsSubmitting(true)
+
+    try {
+      // Create workout data in the same format as the old HTML site
+      const workoutData: any = {
+        activity: getWorkoutTypeName(selectedWorkoutType),
+        points: convertedMeters, // Use the converted meters value
+        date: Timestamp.now(),
+        // images: [] // Ignoring images for now as requested
+      }
+
+      // Only add notes if it has a value
+      if (notes && notes.trim()) {
+        workoutData.notes = notes.trim()
+      }
+
+      // Update user's activities in Firestore
+      const userRef = doc(db, "users", user.id)
+      await updateDoc(userRef, {
+        activities: arrayUnion(workoutData)
+      })
+
+      toast({
+        title: "Workout submitted!",
+        description: `${new Intl.NumberFormat().format(convertedMeters)} meters of ${getWorkoutTypeName(selectedWorkoutType)} recorded.`,
+      })
+
+      // Reset form
+      setDistance("")
+      setNotes("")
+      setImagePreview(null)
+      setSelectedWorkoutType("erg")
+      setBoatType("1x")
+
+      // Redirect to profile to see the updated data
+      router.push("/profile")
+
+    } catch (error) {
+      console.error("Error submitting workout:", error)
+      toast({
+        title: "Submission failed",
+        description: "Please try again",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const getWorkoutTypeName = (type: WorkoutType): string => {
@@ -277,8 +340,8 @@ export default function WorkoutSubmission() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full">
-              Submit Workout
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? "Submitting..." : "Submit Workout"}
             </Button>
           </CardFooter>
         </Card>
