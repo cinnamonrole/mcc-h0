@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { ChevronDown, ChevronUp, Activity, Calendar, Flame, Calculator, Plus } from "lucide-react"
+import { ChevronDown, ChevronUp, Activity, Calendar, Flame, Calculator, Plus, LogOut } from "lucide-react"
 import { useUserData } from "@/hooks/use-user-data"
 import { UserProgressChart } from "@/components/user-progress-chart"
 import { WorkoutGallery } from "@/components/workout-gallery"
@@ -27,7 +27,7 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
   const [selectedWorkoutType, setSelectedWorkoutType] = useState<string>("all")
   const { leaderboardData } = useLeaderboardData()
   const { userData } = useUserData(selectedUserId === "current-user" ? undefined : selectedUserId)
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
   const [metersPerDay, setMetersPerDay] = useState("5000")
   const [calculatedDays, setCalculatedDays] = useState<number | null>(null)
   const [isMoreStatsOpen, setIsMoreStatsOpen] = useState(false)
@@ -71,9 +71,9 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="current-user">Your Profile</SelectItem>
-            {leaderboardData?.map((user) => (
-              <SelectItem key={user.id} value={user.id}>
-                {user.name}
+            {leaderboardData?.map((leaderboardUser) => (
+              <SelectItem key={leaderboardUser.id} value={leaderboardUser.id}>
+                {leaderboardUser.name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -284,6 +284,22 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Sign Out Button - Only show when viewing own profile */}
+      {isCurrentUser && (
+        <Card className="mt-6">
+          <CardContent className="p-4">
+            <Button
+              variant="outline"
+              onClick={signOut}
+              className="w-full text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

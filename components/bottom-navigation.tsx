@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 
 export default function BottomNavigation() {
   const pathname = usePathname()
-  const { isGuest, signOut, isAuthenticated } = useAuth()
+  const { isGuest, signOut, isAuthenticated, user } = useAuth()
 
   // Don't show navigation on admin page
   if (pathname === "/admin") {
@@ -46,7 +46,7 @@ export default function BottomNavigation() {
   const availableNavItems = navItems.filter((item) => !isGuest || item.allowGuest)
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50">
+    <div className="fixed bottom-0 left-0 right-0 z-50" key={`nav-${isGuest}-${isAuthenticated}-${user?.id}`}>
       <div className="max-w-md mx-auto">
         <nav className="flex items-center justify-around bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 h-16 px-4">
           {availableNavItems.map((item) => {
@@ -69,16 +69,11 @@ export default function BottomNavigation() {
             )
           })}
 
-          {isAuthenticated && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={signOut}
-              className="flex flex-col items-center justify-center w-full h-full text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400"
-            >
+          {isGuest && (
+            <Link href="/signup" className="flex flex-col items-center justify-center w-full h-full text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400">
               <LogOut className="h-5 w-5" />
-              <span className="text-xs mt-1">{isGuest ? "Sign Up" : "Sign Out"}</span>
-            </Button>
+              <span className="text-xs mt-1">Sign Up</span>
+            </Link>
           )}
         </nav>
       </div>

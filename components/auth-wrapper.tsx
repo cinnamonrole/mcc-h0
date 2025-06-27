@@ -8,14 +8,18 @@ import { useEffect, useState } from "react"
 import BottomNavigation from "@/components/bottom-navigation"
 
 export default function AuthWrapper({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, isGuest, user } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     // Simulate loading state for auth check
-    setIsLoading(false)
+    const timer = setTimeout(() => {
+      setIsLoading(false)
+    }, 100)
+    
+    return () => clearTimeout(timer)
   }, [])
 
   // Show loading state while checking auth
