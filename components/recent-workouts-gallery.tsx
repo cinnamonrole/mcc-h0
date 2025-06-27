@@ -73,10 +73,19 @@ export function RecentWorkoutsGallery() {
     setSelectedImage(imageUrl)
   }
 
+  const handleTitleClick = () => {
+    router.push('/workouts')
+  }
+
   return (
     <>
       <div className="space-y-3">
-        <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100">Recent Workouts</h3>
+        <h3 
+          className="text-lg font-semibold text-blue-900 dark:text-blue-100 cursor-pointer hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+          onClick={handleTitleClick}
+        >
+          Recent Workouts
+        </h3>
         <div className="flex gap-3 overflow-x-auto pb-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-slate-100 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-slate-400 dark:[&::-webkit-scrollbar-track]:bg-slate-800 dark:[&::-webkit-scrollbar-thumb]:bg-slate-600 dark:[&::-webkit-scrollbar-thumb]:hover:bg-slate-500">
           {recentWorkouts.map((workout) => (
             <div key={workout.id} className="flex-shrink-0 w-48">
@@ -125,6 +134,28 @@ export function RecentWorkoutsGallery() {
               </Card>
             </div>
           ))}
+          
+          {/* "Want to see more?" card */}
+          <div className="flex-shrink-0 w-48">
+            <Card className="h-full bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-blue-200 dark:border-blue-800">
+              <CardContent className="p-3 flex flex-col justify-center items-center text-center h-full">
+                <div className="mb-3">
+                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Want to see more?</p>
+                </div>
+                <button
+                  onClick={() => router.push('/workouts')}
+                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-md transition-colors"
+                >
+                  All Workouts
+                </button>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
 

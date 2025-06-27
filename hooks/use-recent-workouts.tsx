@@ -52,10 +52,10 @@ export function useRecentWorkouts() {
           })
         })
 
-        // Sort by date (most recent first) and take the most recent 10
+        // Sort by date (most recent first) and take the most recent 5
         const sortedWorkouts = allWorkouts
           .sort((a, b) => b.date.getTime() - a.date.getTime())
-          .slice(0, 10)
+          .slice(0, 5)
 
         setRecentWorkouts(sortedWorkouts)
 
