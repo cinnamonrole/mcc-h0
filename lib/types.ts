@@ -19,4 +19,5 @@ export interface UserData {
   dailyRequiredWithRest: number
   topWorkoutType: WorkoutType
   workouts: Workout[]
+  metersByType?: { [key: string]: number }
 }

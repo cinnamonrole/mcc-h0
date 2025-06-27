@@ -17,8 +17,30 @@ export default function LeaderboardPage() {
     return <div>Loading leaderboard data...</div>
   }
 
+  // Filter and sort users based on selected workout type
   const filteredUsers = leaderboardData
-    .filter((user) => (activeTab === "all" ? true : user.topWorkoutType === activeTab))
+    .filter((user) => {
+      if (activeTab === "all") {
+        return true // Show all users
+      }
+      
+      // Check if user has done this workout type
+      const metersForType = user.metersByType?.[activeTab] || 0
+      return metersForType > 0
+    })
+    .map((user) => {
+      if (activeTab === "all") {
+        return user // Use total meters for "all" filter
+      }
+      
+      // For specific workout type, create a modified user object with meters for that type
+      const metersForType = user.metersByType?.[activeTab] || 0
+      return {
+        ...user,
+        totalMeters: metersForType, // Use meters for this specific type
+        deficit: Math.max(0, 1000000 - metersForType) // Recalculate deficit for this type
+      }
+    })
     .sort((a, b) => b.totalMeters - a.totalMeters)
 
   const topThree = filteredUsers.slice(0, 3)

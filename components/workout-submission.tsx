@@ -179,7 +179,11 @@ export default function WorkoutSubmission() {
       case "lift":
         return distanceNum * 5000 // 1 lift = 5000m
       case "otw":
-        return boatType === "1x" ? distanceNum : Math.round((distanceNum / 2) * 1000)
+        if (boatType === "1x") {
+          return distanceNum // 1000m = 1000m for 1x
+        } else {
+          return Math.round(distanceNum / 2) // 2000m = 1000m for 2x
+        }
       default:
         return distanceNum
     }

@@ -5,6 +5,35 @@ import { collection, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import type { UserData } from "@/lib/types"
 
+// Helper function to normalize activity names for filtering
+const normalizeActivityName = (activityName: string): string => {
+  const normalized = activityName.toLowerCase().trim()
+  
+  // Handle OTW variations
+  if (normalized.includes("otw") || normalized.includes("on the water")) {
+    return "otw"
+  }
+  
+  // Handle other variations
+  if (normalized.includes("erg") || normalized.includes("rowing")) {
+    return "erg"
+  }
+  if (normalized.includes("run") || normalized.includes("running")) {
+    return "run"
+  }
+  if (normalized.includes("bike") || normalized.includes("cycling")) {
+    return "bike"
+  }
+  if (normalized.includes("swim") || normalized.includes("swimming")) {
+    return "swim"
+  }
+  if (normalized.includes("lift") || normalized.includes("lifting")) {
+    return "lift"
+  }
+  
+  return normalized
+}
+
 export function useLeaderboardData() {
   const [leaderboardData, setLeaderboardData] = useState<UserData[] | null>(null)
 
@@ -26,23 +55,30 @@ export function useLeaderboardData() {
             return sum + (Number(activity.points) || 0)
           }, 0)
 
+          // Calculate meters by workout type (normalized)
+          const metersByType: { [key: string]: number } = {}
+          activities.forEach((activity: any) => {
+            const normalizedType = normalizeActivityName(activity.activity || "unknown")
+            metersByType[normalizedType] = (metersByType[normalizedType] || 0) + (Number(activity.points) || 0)
+          })
+
           // Calculate deficit (assuming 1M goal)
           const deficit = Math.max(0, 1000000 - totalMeters)
 
           // Calculate daily requirements
-          const daysLeft = 60 // You can make this dynamic based on challenge end date
+          const daysLeft = 70 // You can make this dynamic based on challenge end date
           const dailyRequired = Math.ceil(deficit / daysLeft)
           const dailyRequiredWithRest = Math.ceil((deficit / daysLeft) * 1.17) // With 1 rest day per week
 
           // Determine top workout type
           const workoutTypeCounts: { [key: string]: number } = {}
           activities.forEach((activity: any) => {
-            const type = activity.activity?.toLowerCase() || "unknown"
-            workoutTypeCounts[type] = (workoutTypeCounts[type] || 0) + 1
+            const normalizedType = normalizeActivityName(activity.activity || "unknown")
+            workoutTypeCounts[normalizedType] = (workoutTypeCounts[normalizedType] || 0) + 1
           })
           const topWorkoutType = Object.keys(workoutTypeCounts).reduce((a, b) => 
             workoutTypeCounts[a] > workoutTypeCounts[b] ? a : b, "erg"
-          )
+          ) as any
 
           const userData: UserData = {
             id: doc.id,
@@ -53,7 +89,8 @@ export function useLeaderboardData() {
             dailyRequired,
             dailyRequiredWithRest,
             topWorkoutType,
-            workouts: [] // We don't need full workout data for leaderboard
+            workouts: [], // We don't need full workout data for leaderboard
+            metersByType // Add this for filtering
           }
 
           users.push(userData)
