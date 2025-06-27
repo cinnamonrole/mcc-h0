@@ -58,7 +58,7 @@ export function RecentWorkoutsGallery() {
                 )}
 
                 {workout.notes && (
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 line-clamp-2">{workout.notes}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 line-clamp-1">{workout.notes}</p>
                 )}
               </CardContent>
             </Card>

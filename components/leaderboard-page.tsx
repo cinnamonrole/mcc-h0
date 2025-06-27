@@ -1,26 +1,23 @@
 "use client"
 
 import { useState } from "react"
-import { Search } from "lucide-react"
-import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useLeaderboardData } from "@/hooks/use-leaderboard-data"
 import { TopThreeUsers } from "@/components/top-three-users"
 import { UserLeaderboardCard } from "@/components/user-leaderboard-card"
 import type { WorkoutType } from "@/lib/types"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function LeaderboardPage() {
   const { leaderboardData } = useLeaderboardData()
-  const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState<WorkoutType | "all">("all")
+  const [timeFilter, setTimeFilter] = useState<"total" | "weekly" | "daily">("total")
 
   if (!leaderboardData) {
     return <div>Loading leaderboard data...</div>
   }
 
   const filteredUsers = leaderboardData
-    .filter((user) => user.name.toLowerCase().includes(searchQuery.toLowerCase()))
     .filter((user) => (activeTab === "all" ? true : user.topWorkoutType === activeTab))
     .sort((a, b) => b.totalMeters - a.totalMeters)
 
@@ -31,30 +28,34 @@ export default function LeaderboardPage() {
     <div className="container px-4 py-6">
       <h1 className="text-2xl font-bold text-blue-900 dark:text-blue-100 mb-6">Leaderboard</h1>
 
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
-        <Input
-          placeholder="Search rowers..."
-          className="pl-10"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </div>
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        <Select defaultValue="all" onValueChange={(value) => setActiveTab(value as WorkoutType | "all")}>
+          <SelectTrigger>
+            <SelectValue placeholder="Filter by workout type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Workout Types</SelectItem>
+            <SelectItem value="erg">Erging</SelectItem>
+            <SelectItem value="run">Running</SelectItem>
+            <SelectItem value="bike">Biking</SelectItem>
+            <SelectItem value="swim">Swimming</SelectItem>
+            <SelectItem value="otw">On The Water</SelectItem>
+            <SelectItem value="lift">Lifting</SelectItem>
+            <SelectItem value="other">Other</SelectItem>
+          </SelectContent>
+        </Select>
 
-      <Tabs defaultValue="all" className="mb-6" onValueChange={(value) => setActiveTab(value as WorkoutType | "all")}>
-        <TabsList className="grid grid-cols-4 mb-2">
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="erg">Erging</TabsTrigger>
-          <TabsTrigger value="run">Running</TabsTrigger>
-          <TabsTrigger value="bike">Biking</TabsTrigger>
-        </TabsList>
-        <TabsList className="grid grid-cols-4">
-          <TabsTrigger value="swim">Swimming</TabsTrigger>
-          <TabsTrigger value="otw">OTW</TabsTrigger>
-          <TabsTrigger value="lift">Lifting</TabsTrigger>
-          <TabsTrigger value="other">Other</TabsTrigger>
-        </TabsList>
-      </Tabs>
+        <Select defaultValue="total" onValueChange={(value) => setTimeFilter(value as "total" | "weekly" | "daily")}>
+          <SelectTrigger>
+            <SelectValue placeholder="Time period" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="total">Total</SelectItem>
+            <SelectItem value="weekly">Weekly</SelectItem>
+            <SelectItem value="daily">Daily</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       {topThree.length > 0 && (
         <div className="mb-4">

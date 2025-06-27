@@ -22,7 +22,7 @@ export function WorkoutGallery({ workouts }: WorkoutGalleryProps) {
       {workoutsWithImages.map((workout) => (
         <div key={workout.id} className="relative group overflow-hidden rounded-md">
           <img
-            src={workout.image || "/placeholder.svg"}
+            src={workout.image || "/placeholder.png"}
             alt={`Workout on ${formatDate(workout.date)}`}
             className="w-full aspect-square object-cover"
           />

@@ -34,7 +34,7 @@ export function TopThreeUsers({ users }: TopThreeUsersProps) {
               </div>
               <Link href={`/profile/${second.id}`}>
                 <Avatar className="h-16 w-16 ring-4 ring-slate-300 shadow-xl">
-                  <AvatarImage src={second.profileImage || "/placeholder.svg"} alt={second.name} />
+                  <AvatarImage src={second.profileImage || "/placeholder.png"} alt={second.name} />
                   <AvatarFallback className="bg-gradient-to-br from-slate-200 to-slate-400 text-slate-800 font-bold">
                     {second.name.substring(0, 2).toUpperCase()}
                   </AvatarFallback>
@@ -66,7 +66,7 @@ export function TopThreeUsers({ users }: TopThreeUsersProps) {
               </div>
               <Link href={`/profile/${first.id}`}>
                 <Avatar className="h-20 w-20 ring-4 ring-yellow-400 shadow-2xl">
-                  <AvatarImage src={first.profileImage || "/placeholder.svg"} alt={first.name} />
+                  <AvatarImage src={first.profileImage || "/placeholder.png"} alt={first.name} />
                   <AvatarFallback className="bg-gradient-to-br from-yellow-200 to-yellow-500 text-yellow-900 font-bold">
                     {first.name.substring(0, 2).toUpperCase()}
                   </AvatarFallback>
@@ -98,7 +98,7 @@ export function TopThreeUsers({ users }: TopThreeUsersProps) {
               </div>
               <Link href={`/profile/${third.id}`}>
                 <Avatar className="h-14 w-14 ring-4 ring-orange-300 shadow-xl">
-                  <AvatarImage src={third.profileImage || "/placeholder.svg"} alt={third.name} />
+                  <AvatarImage src={third.profileImage || "/placeholder.png"} alt={third.name} />
                   <AvatarFallback className="bg-gradient-to-br from-orange-200 to-orange-500 text-orange-900 font-bold">
                     {third.name.substring(0, 2).toUpperCase()}
                   </AvatarFallback>

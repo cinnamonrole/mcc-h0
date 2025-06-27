@@ -1,7 +1,5 @@
 "use client"
 
-import { cn } from "@/lib/utils"
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { useTeamData } from "@/hooks/use-team-data"
@@ -39,9 +37,6 @@ export default function TeamOverview() {
             <span className="text-3xl font-bold text-blue-700 dark:text-blue-300">
               {new Intl.NumberFormat().format(totalMeters)}m
             </span>
-            <span className="text-slate-500 dark:text-slate-400 ml-2">
-              of {new Intl.NumberFormat().format(targetMeters)}m
-            </span>
           </div>
           <Progress value={percentComplete} className="h-3 mb-4" />
 
@@ -67,19 +62,6 @@ export default function TeamOverview() {
               <p className="text-xl font-semibold text-blue-800 dark:text-blue-200">
                 {new Intl.NumberFormat().format(dailyPersonRequired)}m
               </p>
-            </div>
-          </div>
-
-          <div className="mt-6 text-center">
-            <div
-              className={cn(
-                "text-lg font-medium",
-                daysAheadOrBehind >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400",
-              )}
-            >
-              {daysAheadOrBehind >= 0
-                ? `You're ${daysAheadOrBehind} days ahead of schedule!`
-                : `You're ${Math.abs(daysAheadOrBehind)} days behind schedule!`}
             </div>
           </div>
         </CardContent>

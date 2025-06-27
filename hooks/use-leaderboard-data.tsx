@@ -14,7 +14,7 @@ export function useLeaderboardData() {
         {
           id: "1",
           name: "Alex Johnson",
-          profileImage: "/placeholder.svg?height=100&width=100",
+          profileImage: "/placeholder.png",
           totalMeters: 450000,
           deficit: 550000,
           dailyRequired: 9167,
@@ -25,7 +25,7 @@ export function useLeaderboardData() {
         {
           id: "2",
           name: "Sam Williams",
-          profileImage: "/placeholder.svg?height=100&width=100",
+          profileImage: "/placeholder.png",
           totalMeters: 420000,
           deficit: 580000,
           dailyRequired: 9667,
@@ -36,7 +36,7 @@ export function useLeaderboardData() {
         {
           id: "3",
           name: "Jordan Smith",
-          profileImage: "/placeholder.svg?height=100&width=100",
+          profileImage: "/placeholder.png",
           totalMeters: 380000,
           deficit: 620000,
           dailyRequired: 10333,
@@ -47,7 +47,7 @@ export function useLeaderboardData() {
         {
           id: "4",
           name: "Taylor Brown",
-          profileImage: "/placeholder.svg?height=100&width=100",
+          profileImage: "/placeholder.png",
           totalMeters: 350000,
           deficit: 650000,
           dailyRequired: 10833,
@@ -58,7 +58,7 @@ export function useLeaderboardData() {
         {
           id: "5",
           name: "Morgan Davis",
-          profileImage: "/placeholder.svg?height=100&width=100",
+          profileImage: "/placeholder.png",
           totalMeters: 320000,
           deficit: 680000,
           dailyRequired: 11333,
@@ -69,7 +69,7 @@ export function useLeaderboardData() {
         {
           id: "6",
           name: "Casey Miller",
-          profileImage: "/placeholder.svg?height=100&width=100",
+          profileImage: "/placeholder.png",
           totalMeters: 300000,
           deficit: 700000,
           dailyRequired: 11667,
@@ -80,7 +80,7 @@ export function useLeaderboardData() {
         {
           id: "7",
           name: "Riley Wilson",
-          profileImage: "/placeholder.svg?height=100&width=100",
+          profileImage: "/placeholder.png",
           totalMeters: 280000,
           deficit: 720000,
           dailyRequired: 12000,
@@ -91,7 +91,7 @@ export function useLeaderboardData() {
         {
           id: "8",
           name: "Jamie Garcia",
-          profileImage: "/placeholder.svg?height=100&width=100",
+          profileImage: "/placeholder.png",
           totalMeters: 250000,
           deficit: 750000,
           dailyRequired: 12500,
@@ -102,7 +102,7 @@ export function useLeaderboardData() {
         {
           id: "9",
           name: "Avery Martinez",
-          profileImage: "/placeholder.svg?height=100&width=100",
+          profileImage: "/placeholder.png",
           totalMeters: 230000,
           deficit: 770000,
           dailyRequired: 12833,
@@ -113,7 +113,7 @@ export function useLeaderboardData() {
         {
           id: "10",
           name: "Drew Thompson",
-          profileImage: "/placeholder.svg?height=100&width=100",
+          profileImage: "/placeholder.png",
           totalMeters: 200000,
           deficit: 800000,
           dailyRequired: 13333,

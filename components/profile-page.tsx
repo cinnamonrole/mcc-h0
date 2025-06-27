@@ -13,13 +13,17 @@ import { ChevronDown, ChevronUp, Activity, Calendar, Flame, Calculator } from "l
 import { useUserData } from "@/hooks/use-user-data"
 import { UserProgressChart } from "@/components/user-progress-chart"
 import { WorkoutGallery } from "@/components/workout-gallery"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useLeaderboardData } from "@/hooks/use-leaderboard-data"
 
 interface ProfilePageProps {
   userId?: string
 }
 
 export default function ProfilePage({ userId }: ProfilePageProps) {
-  const { userData } = useUserData(userId)
+  const [selectedUserId, setSelectedUserId] = useState(userId || "current-user")
+  const { leaderboardData } = useLeaderboardData()
+  const { userData } = useUserData(selectedUserId === "current-user" ? undefined : selectedUserId)
   const [metersPerDay, setMetersPerDay] = useState("5000")
   const [calculatedDays, setCalculatedDays] = useState<number | null>(null)
   const [isMoreStatsOpen, setIsMoreStatsOpen] = useState(false)
@@ -45,6 +49,23 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
 
   return (
     <div className="container px-4 py-6">
+      {/* Profile Selector */}
+      <div className="mb-6">
+        <Select defaultValue={selectedUserId} onValueChange={(value) => setSelectedUserId(value)}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select profile" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="current-user">Your Profile</SelectItem>
+            {leaderboardData?.map((user) => (
+              <SelectItem key={user.id} value={user.id}>
+                {user.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Profile Header */}
       <div className="flex items-center mb-6">
         <Avatar className="h-16 w-16 mr-4">
@@ -111,7 +132,7 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
       {/* More Statistics - Collapsible */}
       <Collapsible open={isMoreStatsOpen} onOpenChange={setIsMoreStatsOpen} className="mb-6">
         <CollapsibleTrigger asChild>
-          <Button variant="outline" className="w-full justify-between">
+          <Button variant="outline" className="w-full justify-between bg-transparent">
             More Statistics
             {isMoreStatsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </Button>
