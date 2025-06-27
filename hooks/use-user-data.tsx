@@ -11,7 +11,7 @@ interface ProgressDataPoint {
   meters: number
 }
 
-export function useUserData(userId?: string) {
+export function useUserData(userId?: string, workoutType?: string) {
   const [userData, setUserData] = useState<UserData | null>(null)
   const [progressData, setProgressData] = useState<ProgressDataPoint[] | null>(null)
   const { user } = useAuth()
@@ -176,7 +176,7 @@ export function useUserData(userId?: string) {
           const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
           
           // Find activities for this date
-          const dayActivities = activities.filter((activity: any) => {
+          let dayActivities = activities.filter((activity: any) => {
             if (!activity.date) return false
             
             let activityDate: Date
@@ -196,6 +196,31 @@ export function useUserData(userId?: string) {
             
             return activityDate.getTime() === date.getTime()
           })
+
+          // Filter by workout type if specified
+          if (workoutType && workoutType !== "all") {
+            dayActivities = dayActivities.filter((activity: any) => {
+              const activityType = activity.activity?.toLowerCase() || "unknown"
+              
+              // Map the workout type to the actual activity names stored in the database
+              switch (workoutType) {
+                case "otw":
+                  return activityType === "otw row" || activityType === "otw"
+                case "erg":
+                  return activityType === "erg" || activityType === "erging"
+                case "run":
+                  return activityType === "run" || activityType === "running"
+                case "bike":
+                  return activityType === "bike" || activityType === "biking"
+                case "swim":
+                  return activityType === "swim" || activityType === "swimming"
+                case "lift":
+                  return activityType === "lift" || activityType === "lifting"
+                default:
+                  return activityType === workoutType
+              }
+            })
+          }
           
           const dayMeters = dayActivities.reduce((sum: number, activity: any) => {
             const points = Number(activity.points) || 0
@@ -217,7 +242,7 @@ export function useUserData(userId?: string) {
     }
 
     fetchUserData()
-  }, [userId, user])
+  }, [userId, user, workoutType])
 
   return { userData, progressData }
 }

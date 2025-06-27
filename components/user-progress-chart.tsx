@@ -5,17 +5,18 @@ import { useUserData } from "@/hooks/use-user-data"
 
 interface UserProgressChartProps {
   userId?: string
+  workoutType?: string
 }
 
-export function UserProgressChart({ userId }: UserProgressChartProps) {
-  const { progressData } = useUserData(userId)
+export function UserProgressChart({ userId, workoutType }: UserProgressChartProps) {
+  const { progressData } = useUserData(userId, workoutType)
 
   if (!progressData || progressData.length === 0) {
     return <div>Loading chart data...</div>
   }
 
   const maxMeters = Math.max(...progressData.map((d) => d.meters))
-  const yAxisMax = Math.max(30000, Math.ceil(maxMeters * 1.1))
+  const yAxisMax = Math.max(20000, Math.ceil(maxMeters * 1.1))
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {

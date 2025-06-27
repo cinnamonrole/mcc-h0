@@ -24,6 +24,7 @@ interface ProfilePageProps {
 
 export default function ProfilePage({ userId }: ProfilePageProps) {
   const [selectedUserId, setSelectedUserId] = useState(userId || "current-user")
+  const [selectedWorkoutType, setSelectedWorkoutType] = useState<string>("all")
   const { leaderboardData } = useLeaderboardData()
   const { userData } = useUserData(selectedUserId === "current-user" ? undefined : selectedUserId)
   const { user } = useAuth()
@@ -233,15 +234,21 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
               <CardTitle className="text-xl">Meters Per Day</CardTitle>
             </CardHeader>
             <CardContent>
-              <UserProgressChart userId={selectedUserId === "current-user" ? undefined : selectedUserId} />
+              <UserProgressChart 
+                userId={selectedUserId === "current-user" ? undefined : selectedUserId}
+                workoutType={selectedWorkoutType}
+              />
 
               <div className="mt-4">
-                <Tabs defaultValue="all">
-                  <TabsList className="grid grid-cols-4">
-                    <TabsTrigger value="all">All</TabsTrigger>
-                    <TabsTrigger value="erg">Erg</TabsTrigger>
-                    <TabsTrigger value="run">Run</TabsTrigger>
-                    <TabsTrigger value="other">Other</TabsTrigger>
+                <Tabs value={selectedWorkoutType} onValueChange={setSelectedWorkoutType}>
+                  <TabsList className="grid grid-cols-7 gap-1">
+                    <TabsTrigger value="all" className="text-xs px-2">All</TabsTrigger>
+                    <TabsTrigger value="erg" className="text-xs px-2">Erg</TabsTrigger>
+                    <TabsTrigger value="run" className="text-xs px-2">Run</TabsTrigger>
+                    <TabsTrigger value="swim" className="text-xs px-2">Swim</TabsTrigger>
+                    <TabsTrigger value="otw" className="text-xs px-2">OTW</TabsTrigger>
+                    <TabsTrigger value="lift" className="text-xs px-2">Lift</TabsTrigger>
+                    <TabsTrigger value="bike" className="text-xs px-2">Bike</TabsTrigger>
                   </TabsList>
                 </Tabs>
               </div>
