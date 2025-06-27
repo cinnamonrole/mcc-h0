@@ -22,6 +22,7 @@ interface AuthContextType {
   user: User | null
   isGuest: boolean
   isAuthenticated: boolean
+  isLoading: boolean
   signUp: (name: string, email: string, password: string) => Promise<void>
   signIn: (email: string, password: string) => Promise<void>
   signOut: () => void
@@ -34,12 +35,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isGuest, setIsGuest] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-      if (firebaseUser) {
-        // User is signed in (no email verification required)
-        try {
+      try {
+        if (firebaseUser) {
+          // User is signed in (no email verification required)
           const userRef = doc(db, "users", firebaseUser.uid)
           const userSnap = await getDoc(userRef)
           
@@ -60,18 +62,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setIsAuthenticated(false)
             setIsGuest(false)
           }
-        } catch (error) {
-          console.error("Error fetching user data:", error)
-          await firebaseSignOut(auth)
+        } else {
+          // User is signed out
           setUser(null)
           setIsAuthenticated(false)
           setIsGuest(false)
         }
-      } else {
-        // User is signed out
+      } catch (error) {
+        console.error("Error fetching user data:", error)
+        await firebaseSignOut(auth)
         setUser(null)
         setIsAuthenticated(false)
         setIsGuest(false)
+      } finally {
+        setIsLoading(false)
       }
     })
 
@@ -135,6 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isGuest,
         isAuthenticated,
+        isLoading,
         signUp,
         signIn,
         signOut,
