@@ -11,9 +11,30 @@ export function RecentWorkoutsGallery() {
   if (!recentWorkouts || recentWorkouts.length === 0) {
     return (
       <Card>
-        <CardContent className="py-6 text-center text-slate-500">No recent workouts to display.</CardContent>
+        <CardContent className="py-6 text-center text-slate-500">
+          No recent workouts to display.
+        </CardContent>
       </Card>
     )
+  }
+
+  const getWorkoutTypeColor = (type: string) => {
+    switch (type) {
+      case "erg":
+        return "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+      case "otw":
+        return "bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300"
+      case "run":
+        return "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+      case "bike":
+        return "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300"
+      case "swim":
+        return "bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300"
+      case "lift":
+        return "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300"
+      default:
+        return "bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-300"
+    }
   }
 
   return (
@@ -37,28 +58,27 @@ export function RecentWorkoutsGallery() {
                   </div>
                 </div>
 
-                <p className="text-sm text-slate-700 dark:text-slate-300 mb-2">
-                  submitted{" "}
-                  <span className="font-semibold text-blue-600 dark:text-blue-400">
-                    {new Intl.NumberFormat().format(workout.meters)}m
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${getWorkoutTypeColor(workout.type)}`}>
+                    {workout.type.toUpperCase()}
                   </span>
-                </p>
+                  <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                    {new Intl.NumberFormat().format(workout.meters)}m
+                  </p>
+                </div>
 
                 {workout.image && (
-                  <div className="relative">
+                  <div className="relative mb-2">
                     <img
-                      src={workout.image || "/placeholder.svg"}
+                      src={workout.image}
                       alt={`${workout.userName}'s workout`}
                       className="w-full h-24 object-cover rounded-md"
                     />
-                    <div className="absolute top-1 right-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
-                      {workout.type.toUpperCase()}
-                    </div>
                   </div>
                 )}
 
                 {workout.notes && (
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 line-clamp-1">{workout.notes}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">{workout.notes}</p>
                 )}
               </CardContent>
             </Card>

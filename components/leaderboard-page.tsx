@@ -62,7 +62,6 @@ export default function LeaderboardPage() {
             <SelectItem value="swim">Swimming</SelectItem>
             <SelectItem value="otw">On The Water</SelectItem>
             <SelectItem value="lift">Lifting</SelectItem>
-            <SelectItem value="other">Other</SelectItem>
           </SelectContent>
         </Select>
       </div>

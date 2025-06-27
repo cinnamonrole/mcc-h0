@@ -9,8 +9,8 @@ const firebaseConfig = {
   projectId: "mccmerge",
   storageBucket: "mccmerge.firebasestorage.app",
   messagingSenderId: "843997224921",
-  appId: "1:843997224921:web:0125ec9ce9629f7b13c3c8",
-  measurementId: "G-K2CRL9CG40"
+  appId: "1:843997224921:web:dd8cd02af134563b13c3c8",
+  measurementId: "G-9RQCKM0JES"
 }
 
 // Initialize Firebase
