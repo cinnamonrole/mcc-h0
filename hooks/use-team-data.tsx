@@ -89,12 +89,18 @@ export function useTeamData() {
           dailyProgress.set(dateKey, (dailyProgress.get(dateKey) || 0) + meters)
         })
 
+        // Calculate daily average from the beginning of summer
+        const summerStartDate = new Date('2024-06-12') // Beginning of summer
+        const today = new Date()
+        const daysSinceSummerStart = Math.max(1, Math.ceil((today.getTime() - summerStartDate.getTime()) / (1000 * 60 * 60 * 24)))
+        const dailyAverage = Math.round(totalMeters / daysSinceSummerStart)
+
         // Convert to chart data format and sort by date
         const realProgressData: ProgressDataPoint[] = Array.from(dailyProgress.entries())
           .map(([date, meters]) => ({
             date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
             meters,
-            target: dailyTeamRequired // Daily target based on remaining deficit
+            target: dailyAverage // Daily average instead of target
           }))
           .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
@@ -107,7 +113,7 @@ export function useTeamData() {
           realProgressData.push({
             date: yesterday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
             meters: 0,
-            target: dailyTeamRequired
+            target: dailyAverage
           })
         }
 

@@ -97,8 +97,8 @@ export function useUserData(userId?: string, workoutType?: string) {
               } else {
                 break // Streak broken
               }
-            }
-          } else {
+          }
+        } else {
             // User didn't work out today, check if they worked out yesterday
             const yesterday = new Date(today)
             yesterday.setDate(today.getDate() - 1)
@@ -135,7 +135,7 @@ export function useUserData(userId?: string, workoutType?: string) {
           meters: Number(activity.points) || 0,
           date: activity.date?.toDate() || new Date(),
           image: activity.images?.[0] || activity.image || "/placeholder.png"
-        }))
+        })).sort((a: Workout, b: Workout) => b.date.getTime() - a.date.getTime()) // Sort by date, most recent first
 
         // Determine top workout type
         const workoutTypeCounts: { [key: string]: number } = {}
@@ -186,7 +186,7 @@ export function useUserData(userId?: string, workoutType?: string) {
             } else if (activity.date instanceof Date) {
               // Already a Date object
               activityDate = activity.date
-            } else {
+      } else {
               // String or other format
               activityDate = new Date(activity.date)
             }
