@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { doc, getDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { useAuth } from "@/hooks/use-auth"
-import type { UserData, Workout } from "@/lib/types"
+import type { UserData, Workout, WorkoutType } from "@/lib/types"
 
 interface ProgressDataPoint {
   date: string
@@ -52,9 +52,81 @@ export function useUserData(userId?: string) {
         const deficit = Math.max(0, 1000000 - totalMeters)
 
         // Calculate daily requirements
-        const daysLeft = 60 // You can make this dynamic based on challenge end date
+        const daysLeft = 70 // You can make this dynamic based on challenge end date
         const dailyRequired = Math.ceil(deficit / daysLeft)
-        const dailyRequiredWithRest = Math.ceil((deficit / daysLeft) * 1.17) // With 1 rest day per week
+        const dailyRequiredWithRest = Math.ceil(deficit / (daysLeft * 6/7)) // With 1 rest day per week (6 active days out of 7)
+
+        // Calculate workout streak
+        const calculateStreak = (activities: any[]): number => {
+          if (activities.length === 0) return 0
+
+          // Get unique dates where user worked out
+          const workoutDates = new Set<string>()
+          activities.forEach((activity: any) => {
+            if (activity.date) {
+              const date = activity.date.toDate ? activity.date.toDate() : new Date(activity.date)
+              workoutDates.add(date.toDateString())
+            }
+          })
+
+          const sortedDates = Array.from(workoutDates)
+            .map(dateStr => new Date(dateStr))
+            .sort((a, b) => b.getTime() - a.getTime()) // Sort descending (most recent first)
+
+          if (sortedDates.length === 0) return 0
+
+          let streak = 0
+          const today = new Date()
+          today.setHours(0, 0, 0, 0)
+
+          // Check if user worked out today
+          const todayStr = today.toDateString()
+          const hasWorkedOutToday = sortedDates.some(date => date.toDateString() === todayStr)
+
+          if (hasWorkedOutToday) {
+            streak = 1
+            // Count consecutive days backwards from today
+            for (let i = 1; i <= 365; i++) { // Limit to 1 year to prevent infinite loop
+              const checkDate = new Date(today)
+              checkDate.setDate(today.getDate() - i)
+              const checkDateStr = checkDate.toDateString()
+              
+              const hasWorkedOutOnDate = sortedDates.some(date => date.toDateString() === checkDateStr)
+              if (hasWorkedOutOnDate) {
+                streak++
+              } else {
+                break // Streak broken
+              }
+            }
+          } else {
+            // User didn't work out today, check if they worked out yesterday
+            const yesterday = new Date(today)
+            yesterday.setDate(today.getDate() - 1)
+            const yesterdayStr = yesterday.toDateString()
+            const hasWorkedOutYesterday = sortedDates.some(date => date.toDateString() === yesterdayStr)
+
+            if (hasWorkedOutYesterday) {
+              streak = 1
+              // Count consecutive days backwards from yesterday
+              for (let i = 2; i <= 365; i++) {
+                const checkDate = new Date(today)
+                checkDate.setDate(today.getDate() - i)
+                const checkDateStr = checkDate.toDateString()
+                
+                const hasWorkedOutOnDate = sortedDates.some(date => date.toDateString() === checkDateStr)
+                if (hasWorkedOutOnDate) {
+                  streak++
+                } else {
+                  break // Streak broken
+                }
+              }
+            }
+          }
+
+          return streak
+        }
+
+        const dayStreak = calculateStreak(activities)
 
         // Convert activities to workout format
         const workouts: Workout[] = activities.map((activity: any, index: number) => ({
@@ -73,18 +145,21 @@ export function useUserData(userId?: string) {
         })
         const topWorkoutType = Object.keys(workoutTypeCounts).reduce((a, b) => 
           workoutTypeCounts[a] > workoutTypeCounts[b] ? a : b, "erg"
-        )
+        ) as WorkoutType
 
         const realUserData: UserData = {
           id: targetUserId,
           name: firestoreData.username || "Unknown User",
           profileImage: "/placeholder.png", // You can add profile image support later
           totalMeters,
+          dailyMeters: 0, // Will be calculated if needed for time-based features
+          weeklyMeters: 0, // Will be calculated if needed for time-based features
           deficit,
           dailyRequired,
           dailyRequiredWithRest,
           topWorkoutType,
-          workouts
+          workouts,
+          dayStreak
         }
 
         setUserData(realUserData)

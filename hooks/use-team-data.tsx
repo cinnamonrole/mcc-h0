@@ -32,7 +32,7 @@ export function useTeamData() {
         targetMeters: 10000000, // 10 members x 1M meters
         membersCount: 10,
         deficit: 6750000,
-        remainingDays: 60,
+        remainingDays: 70,
         dailyTeamRequired: 112500,
         dailyPersonRequired: 11250,
         daysAheadOrBehind: 4,

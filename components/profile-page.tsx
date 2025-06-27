@@ -42,12 +42,11 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
     )
   }
 
-  const { name, profileImage, totalMeters, deficit, dailyRequired, dailyRequiredWithRest, workouts } = userData
+  const { name, profileImage, totalMeters, deficit, dailyRequired, dailyRequiredWithRest, workouts, dayStreak } = userData
 
   const percentComplete = Math.min(100, (totalMeters / 1000000) * 100)
   const workoutCount = workouts.length
-  const daysLeft = 60 // Mock data - in real app this would be calculated
-  const dayStreak = 7 // Mock data - consecutive days with workouts
+  const daysLeft = 70 // Mock data - in real app this would be calculated
 
   const calculateDays = () => {
     const metersPerDayNum = Number.parseFloat(metersPerDay)
@@ -168,6 +167,7 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
                 <p className="text-xl font-semibold text-blue-600 dark:text-blue-400">
                   {new Intl.NumberFormat().format(dailyRequired)}m
                 </p>
+                <p className="text-xs text-slate-500 dark:text-slate-500">per day to reach goal</p>
               </CardContent>
             </Card>
 
@@ -177,6 +177,7 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
                 <p className="text-xl font-semibold text-green-600 dark:text-green-400">
                   {new Intl.NumberFormat().format(dailyRequiredWithRest)}m
                 </p>
+                <p className="text-xs text-slate-500 dark:text-slate-500">per active day (6 days/week)</p>
               </CardContent>
             </Card>
           </div>
