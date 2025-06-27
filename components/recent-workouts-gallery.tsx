@@ -1,12 +1,39 @@
 "use client"
 
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { useRecentWorkouts } from "@/hooks/use-recent-workouts"
 import { formatDate } from "@/lib/utils"
 
+function formatRelativeTime(date: Date): string {
+  const now = new Date()
+  const diffInMs = now.getTime() - date.getTime()
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60))
+  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60))
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24))
+
+  // If same day, show relative time
+  if (diffInDays === 0) {
+    if (diffInMinutes < 1) {
+      return "Just now"
+    } else if (diffInMinutes < 60) {
+      return `${diffInMinutes} minute${diffInMinutes === 1 ? '' : 's'} ago`
+    } else if (diffInHours < 24) {
+      return `${diffInHours} hour${diffInHours === 1 ? '' : 's'} ago`
+    }
+  }
+
+  // If different day, show date
+  return formatDate(date)
+}
+
 export function RecentWorkoutsGallery() {
   const { recentWorkouts } = useRecentWorkouts()
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const router = useRouter()
 
   if (!recentWorkouts || recentWorkouts.length === 0) {
     return (
@@ -37,54 +64,81 @@ export function RecentWorkoutsGallery() {
     }
   }
 
+  const handleCardClick = (userId: string) => {
+    router.push(`/profile/${userId}`)
+  }
+
+  const handleImageClick = (e: React.MouseEvent, imageUrl: string) => {
+    e.stopPropagation() // Prevent card click when clicking image
+    setSelectedImage(imageUrl)
+  }
+
   return (
-    <div className="space-y-3">
-      <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100">Recent Workouts</h3>
-      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-        {recentWorkouts.map((workout) => (
-          <div key={workout.id} className="flex-shrink-0 w-48">
-            <Card className="h-full">
-              <CardContent className="p-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={workout.userProfileImage || "/placeholder.svg"} alt={workout.userName} />
-                    <AvatarFallback className="bg-blue-100 text-blue-800 text-xs">
-                      {workout.userName.substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{workout.userName}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{formatDate(workout.date)}</p>
+    <>
+      <div className="space-y-3">
+        <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100">Recent Workouts</h3>
+        <div className="flex gap-3 overflow-x-auto pb-2 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-slate-100 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-slate-400 dark:[&::-webkit-scrollbar-track]:bg-slate-800 dark:[&::-webkit-scrollbar-thumb]:bg-slate-600 dark:[&::-webkit-scrollbar-thumb]:hover:bg-slate-500">
+          {recentWorkouts.map((workout) => (
+            <div key={workout.id} className="flex-shrink-0 w-48">
+              <Card 
+                className="h-full cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => handleCardClick(workout.id.split('-')[0])} // Extract userId from workout.id
+              >
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={workout.userProfileImage || "/placeholder.svg"} alt={workout.userName} />
+                      <AvatarFallback className="bg-blue-100 text-blue-800 text-xs">
+                        {workout.userName.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{workout.userName}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{formatRelativeTime(workout.date)}</p>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex items-center justify-between mb-2">
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${getWorkoutTypeColor(workout.type)}`}>
-                    {workout.type.toUpperCase()}
-                  </span>
-                  <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                    {new Intl.NumberFormat().format(workout.meters)}m
-                  </p>
-                </div>
-
-                {workout.image && (
-                  <div className="relative mb-2">
-                    <img
-                      src={workout.image}
-                      alt={`${workout.userName}'s workout`}
-                      className="w-full h-24 object-cover rounded-md"
-                    />
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${getWorkoutTypeColor(workout.type)}`}>
+                      {workout.type.toUpperCase()}
+                    </span>
+                    <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                      {new Intl.NumberFormat().format(workout.meters)}m
+                    </p>
                   </div>
-                )}
 
-                {workout.notes && (
-                  <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">{workout.notes}</p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        ))}
+                  {workout.image && (
+                    <div className="relative mb-2">
+                      <img
+                        src={workout.image}
+                        alt={`${workout.userName}'s workout`}
+                        className="w-full h-28 object-contain rounded-md cursor-pointer hover:opacity-90 transition-opacity bg-slate-50 dark:bg-slate-800"
+                        onClick={(e) => handleImageClick(e, workout.image!)}
+                      />
+                    </div>
+                  )}
+
+                  {workout.notes && (
+                    <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">{workout.notes}</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+
+      <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+          {selectedImage && (
+            <img
+              src={selectedImage}
+              alt="Expanded workout image"
+              className="w-full h-full object-contain rounded-lg"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

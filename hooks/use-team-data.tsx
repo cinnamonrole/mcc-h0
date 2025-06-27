@@ -34,6 +34,7 @@ export function useTeamData() {
 
         let totalMeters = 0
         let membersCount = 0
+        const allActivities: any[] = []
 
         querySnapshot.forEach((doc) => {
           const firestoreData = doc.data()
@@ -46,6 +47,16 @@ export function useTeamData() {
 
           totalMeters += userMeters
           membersCount++
+
+          // Collect all activities for daily progress calculation
+          activities.forEach((activity: any) => {
+            if (activity.date) {
+              allActivities.push({
+                ...activity,
+                date: activity.date.toDate ? activity.date.toDate() : new Date(activity.date)
+              })
+            }
+          })
         })
 
         // Calculate team metrics
@@ -68,25 +79,39 @@ export function useTeamData() {
 
         setTeamData(realTeamData)
 
-        // For now, keep mock progress data until we implement daily team progress
-        const mockProgressData: ProgressDataPoint[] = [
-          { date: "Jun 1", meters: 45000, target: 100000 },
-          { date: "Jun 2", meters: 62000, target: 100000 },
-          { date: "Jun 3", meters: 58000, target: 100000 },
-          { date: "Jun 4", meters: 71000, target: 100000 },
-          { date: "Jun 5", meters: 49000, target: 100000 },
-          { date: "Jun 6", meters: 82000, target: 100000 },
-          { date: "Jun 7", meters: 75000, target: 100000 },
-          { date: "Jun 8", meters: 68000, target: 100000 },
-          { date: "Jun 9", meters: 90000, target: 100000 },
-          { date: "Jun 10", meters: 110000, target: 100000 },
-          { date: "Jun 11", meters: 95000, target: 100000 },
-          { date: "Jun 12", meters: 105000, target: 100000 },
-          { date: "Jun 13", meters: 120000, target: 100000 },
-          { date: "Jun 14", meters: 115000, target: 100000 },
-        ]
+        // Calculate real daily team progress
+        const dailyProgress = new Map<string, number>()
+        
+        // Group activities by date and sum meters
+        allActivities.forEach((activity) => {
+          const dateKey = activity.date.toISOString().split('T')[0] // YYYY-MM-DD format
+          const meters = Number(activity.points) || 0
+          dailyProgress.set(dateKey, (dailyProgress.get(dateKey) || 0) + meters)
+        })
 
-        setProgressData(mockProgressData)
+        // Convert to chart data format and sort by date
+        const realProgressData: ProgressDataPoint[] = Array.from(dailyProgress.entries())
+          .map(([date, meters]) => ({
+            date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            meters,
+            target: dailyTeamRequired // Daily target based on remaining deficit
+          }))
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+
+        // If no real data, provide some default data
+        if (realProgressData.length === 0) {
+          const today = new Date()
+          const yesterday = new Date(today)
+          yesterday.setDate(yesterday.getDate() - 1)
+          
+          realProgressData.push({
+            date: yesterday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            meters: 0,
+            target: dailyTeamRequired
+          })
+        }
+
+        setProgressData(realProgressData)
 
       } catch (error) {
         console.error("Error fetching team data:", error)
