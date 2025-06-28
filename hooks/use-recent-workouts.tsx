@@ -12,7 +12,7 @@ interface RecentWorkout {
   type: WorkoutType
   meters: number
   date: Date
-  image?: string
+  images?: string[]
   notes?: string
 }
 
@@ -44,7 +44,7 @@ export function useRecentWorkouts() {
                 type: (activity.activity?.toLowerCase() || "unknown") as WorkoutType,
                 meters: Number(activity.points) || 0,
                 date: activity.date?.toDate() || new Date(),
-                image: activity.images?.[0] || activity.image || undefined, // Use first image if multiple
+                images: activity.images || (activity.image ? [activity.image] : []),
                 notes: activity.notes || undefined
               }
               allWorkouts.push(workout)

@@ -5,7 +5,7 @@ export interface Workout {
   type: WorkoutType
   meters: number
   date: Date
-  image?: string
+  images?: string[]
   notes?: string
 }
 

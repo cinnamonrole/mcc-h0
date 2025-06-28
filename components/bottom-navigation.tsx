@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, Upload, BarChart2, User, LogOut } from "lucide-react"
+import { Home, Upload, BarChart2, User, LogOut, UserPlus } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -71,7 +71,7 @@ export default function BottomNavigation() {
 
           {isGuest && (
             <Link href="/signup" className="flex flex-col items-center justify-center w-full h-full text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400">
-              <LogOut className="h-5 w-5" />
+              <UserPlus className="h-5 w-5" />
               <span className="text-xs mt-1">Sign Up</span>
             </Link>
           )}

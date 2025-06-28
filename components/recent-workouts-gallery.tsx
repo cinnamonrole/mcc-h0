@@ -116,14 +116,18 @@ export function RecentWorkoutsGallery() {
                     </p>
                   </div>
 
-                  {workout.image && (
-                    <div className="relative mb-2">
-                      <img
-                        src={workout.image}
-                        alt={`${workout.userName}'s workout`}
-                        className="w-full h-28 object-contain rounded-md cursor-pointer hover:opacity-90 transition-opacity bg-slate-50 dark:bg-slate-800"
-                        onClick={(e) => handleImageClick(e, workout.image!)}
-                      />
+                  {workout.images && workout.images.length > 0 && (
+                    <div className="flex gap-1 mb-2">
+                      {workout.images.map((imageUrl, index) => (
+                        <div key={`${workout.id}-${index}`} className="flex-shrink-0">
+                          <img
+                            src={imageUrl}
+                            alt={`${workout.userName}'s workout`}
+                            className="w-full h-28 object-contain rounded-md cursor-pointer hover:opacity-90 transition-opacity bg-slate-50 dark:bg-slate-800"
+                            onClick={(e) => handleImageClick(e, imageUrl)}
+                          />
+                        </div>
+                      ))}
                     </div>
                   )}
 

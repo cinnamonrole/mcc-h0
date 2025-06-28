@@ -18,7 +18,7 @@ interface Workout {
   type: WorkoutType
   meters: number
   date: Date
-  image?: string
+  images?: string[]
   notes?: string
 }
 
@@ -75,7 +75,7 @@ export default function WorkoutsPage() {
                 type: (activity.activity?.toLowerCase() || "unknown") as WorkoutType,
                 meters: Number(activity.points) || 0,
                 date: activity.date?.toDate() || new Date(),
-                image: activity.images?.[0] || activity.image || undefined,
+                images: activity.images || (activity.image ? [activity.image] : []),
                 notes: activity.notes || undefined
               }
               workouts.push(workout)
@@ -185,14 +185,18 @@ export default function WorkoutsPage() {
 
                 {/* Image and Notes */}
                 <div className="mt-4 flex gap-4">
-                  {workout.image && (
-                    <div className="flex-shrink-0">
-                      <img
-                        src={workout.image}
-                        alt={`${workout.userName}'s workout`}
-                        className="w-32 h-24 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={(e) => handleImageClick(e, workout.image!)}
-                      />
+                  {workout.images && workout.images.length > 0 && (
+                    <div className="flex gap-2 flex-shrink-0">
+                      {workout.images.map((imageUrl, index) => (
+                        <div key={`${workout.id}-${index}`} className="flex-shrink-0">
+                          <img
+                            src={imageUrl}
+                            alt={`${workout.userName}'s workout`}
+                            className="w-32 h-24 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={(e) => handleImageClick(e, imageUrl)}
+                          />
+                        </div>
+                      ))}
                     </div>
                   )}
                   {workout.notes && (

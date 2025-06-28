@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -15,7 +15,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 
 export default function SigninPage() {
-  const { signIn, continueAsGuest } = useAuth()
+  const { signIn, continueAsGuest, isAuthenticated, isLoading: authLoading, isGuest, user } = useAuth()
   const { toast } = useToast()
   const router = useRouter()
   const [formData, setFormData] = useState({
@@ -23,7 +23,28 @@ export default function SigninPage() {
     password: "",
   })
   const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Redirect authenticated users (but not guests) to homepage
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && !isGuest) {
+      router.push("/")
+    }
+  }, [isAuthenticated, isGuest, authLoading, router])
+
+  // Show loading while checking auth state
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 p-4">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  // Don't render the form if user is already authenticated (but allow guests)
+  if (isAuthenticated && !isGuest) {
+    return null
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -34,7 +55,7 @@ export default function SigninPage() {
 
   const handleSignin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    setIsSubmitting(true)
 
     try {
       await signIn(formData.email, formData.password)
@@ -63,7 +84,7 @@ export default function SigninPage() {
       })
     }
 
-    setIsLoading(false)
+    setIsSubmitting(false)
   }
 
   const handleGuestAccess = () => {
@@ -90,7 +111,12 @@ export default function SigninPage() {
         <Card>
           <CardHeader>
             <CardTitle>Sign In</CardTitle>
-            <CardDescription>Enter your credentials to access your account</CardDescription>
+            <CardDescription>
+              {isGuest 
+                ? "Sign in with your existing account to submit workouts and track your progress!" 
+                : "Enter your credentials to access your account"
+              }
+            </CardDescription>
           </CardHeader>
           <form onSubmit={handleSignin}>
             <CardContent className="space-y-4">
@@ -154,8 +180,8 @@ export default function SigninPage() {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Signing In..." : "Sign In"}
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? "Signing In..." : "Sign In"}
               </Button>
 
               <div className="relative w-full">
