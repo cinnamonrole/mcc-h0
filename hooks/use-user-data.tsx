@@ -134,7 +134,7 @@ export function useUserData(userId?: string, workoutType?: string) {
           type: activity.activity?.toLowerCase() || "unknown",
           meters: Number(activity.points) || 0,
           date: activity.date?.toDate() || new Date(),
-          image: activity.images?.[0] || activity.image || "/placeholder.png"
+          images: activity.images || (activity.image ? [activity.image] : [])
         })).sort((a: Workout, b: Workout) => b.date.getTime() - a.date.getTime()) // Sort by date, most recent first
 
         // Determine top workout type
