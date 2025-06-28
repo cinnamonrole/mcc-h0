@@ -14,7 +14,8 @@ import { WorkoutTypeCard } from "@/components/workout-type-card"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/hooks/use-auth"
 import { doc, updateDoc, arrayUnion, Timestamp } from "firebase/firestore"
-import { db } from "@/lib/firebase"
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
+import { db, storage } from "@/lib/firebase"
 import { useRouter } from "next/navigation"
 
 export default function WorkoutSubmission() {
@@ -27,6 +28,7 @@ export default function WorkoutSubmission() {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [boatType, setBoatType] = useState<"1x" | "2x">("1x")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null)
 
   const workoutTypes = [
     { id: "erg" as WorkoutType, name: "Erg", icon: Rows, color: "bg-blue-100 text-blue-700" },
@@ -38,8 +40,11 @@ export default function WorkoutSubmission() {
   ]
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
+    const files = e.target.files
+    if (files && files.length > 0) {
+      setSelectedFiles(files)
+      // Show preview of first image
+      const file = files[0]
       const reader = new FileReader()
       reader.onload = (e) => {
         setImagePreview(e.target?.result as string)
@@ -79,15 +84,32 @@ export default function WorkoutSubmission() {
       return
     }
 
+    // Check for required image upload
+    if (!selectedFiles || selectedFiles.length === 0) {
+      toast({
+        title: "Image required",
+        description: "An image upload is required as proof for your workout.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
+      // Upload images to Firebase Storage (same as original)
+      const uploadPromises = Array.from(selectedFiles).map(file => {
+        const storageRef = ref(storage, `workout_images/${user.id}/${Date.now()}_${file.name}`)
+        return uploadBytes(storageRef, file).then(snapshot => getDownloadURL(snapshot.ref))
+      })
+      const imageUrls = await Promise.all(uploadPromises)
+
       // Create workout data in the same format as the old HTML site
       const workoutData: any = {
         activity: getWorkoutTypeName(selectedWorkoutType),
-        points: convertedMeters, // Use the converted meters value
+        points: convertedMeters,
         date: Timestamp.now(),
-        // images: [] // Ignoring images for now as requested
+        images: imageUrls // Store image URLs like the original
       }
 
       // Only add notes if it has a value
@@ -110,6 +132,7 @@ export default function WorkoutSubmission() {
       setDistance("")
       setNotes("")
       setImagePreview(null)
+      setSelectedFiles(null)
       setSelectedWorkoutType("erg")
       setBoatType("1x")
 
@@ -279,12 +302,12 @@ export default function WorkoutSubmission() {
                 />
               </div>
               <div className="flex justify-end">
-                <p className="text-xs text-slate-500 mt-0px]">Final meters after conversion</p>
+                <p className="text-xs text-slate-500 mt-0">Final meters after conversion</p>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="proof">Proof of Workout (Optional)</Label>
+              <Label htmlFor="proof">Proof of Workout (Required)</Label>
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   type="button"
@@ -311,12 +334,19 @@ export default function WorkoutSubmission() {
                   Camera
                 </Button>
               </div>
-              <input id="image-upload" type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+              <input 
+                id="image-upload" 
+                type="file" 
+                accept="image/*" 
+                multiple
+                className="hidden" 
+                onChange={handleImageUpload} 
+              />
 
               {imagePreview && (
                 <div className="mt-2 relative">
                   <img
-                    src={imagePreview || "/placeholder.svg"}
+                    src={imagePreview}
                     alt="Workout proof"
                     className="w-full h-40 object-cover rounded-md"
                   />
@@ -325,11 +355,23 @@ export default function WorkoutSubmission() {
                     variant="destructive"
                     size="sm"
                     className="absolute top-2 right-2"
-                    onClick={() => setImagePreview(null)}
+                    onClick={() => {
+                      setImagePreview(null)
+                      setSelectedFiles(null)
+                    }}
                   >
                     Remove
                   </Button>
                 </div>
+              )}
+
+              {selectedFiles && (
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  {selectedFiles.length === 1 
+                    ? `Selected: ${selectedFiles[0].name}`
+                    : `Selected: ${selectedFiles.length} files`
+                  }
+                </p>
               )}
             </div>
 
