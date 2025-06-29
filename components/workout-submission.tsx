@@ -13,10 +13,342 @@ import type { WorkoutType } from "@/lib/types"
 import { WorkoutTypeCard } from "@/components/workout-type-card"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/hooks/use-auth"
-import { doc, updateDoc, arrayUnion, Timestamp } from "firebase/firestore"
+import { doc, updateDoc, arrayUnion, Timestamp, getDoc } from "firebase/firestore"
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { db, storage } from "@/lib/firebase"
 import { useRouter } from "next/navigation"
+import { calculateAllBadges } from "@/lib/badge-calculations"
+import { UserBadgeData } from "@/lib/types"
+
+// Helper function to clean badge data for Firestore (remove undefined values)
+const cleanBadgeDataForFirestore = (badgeData: UserBadgeData): any => {
+  const cleanedBadges: { [key: string]: any } = {}
+  
+  Object.entries(badgeData.badges).forEach(([badgeId, badge]) => {
+    const cleanedBadge: any = {
+      earned: badge.earned,
+      progress: badge.progress,
+      maxProgress: badge.maxProgress,
+      lastUpdated: badge.lastUpdated
+    }
+    
+    // Only include earnedDate if it's not undefined
+    if (badge.earnedDate) {
+      cleanedBadge.earnedDate = badge.earnedDate
+    }
+    
+    cleanedBadges[badgeId] = cleanedBadge
+  })
+  
+  return {
+    userId: badgeData.userId,
+    badges: cleanedBadges,
+    lastCalculated: badgeData.lastCalculated
+  }
+}
+
+// Helper function to normalize activity type names
+const normalizeActivityType = (activityName: string): string => {
+  if (!activityName) return 'unknown'
+  const normalized = activityName.toLowerCase().trim()
+  
+  // Handle variations
+  if (normalized.includes('otw') || normalized.includes('on the water')) {
+    return 'otw'
+  }
+  if (normalized.includes('erg') || normalized.includes('rowing')) {
+    return 'erg'
+  }
+  if (normalized.includes('run') || normalized.includes('running')) {
+    return 'run'
+  }
+  if (normalized.includes('bike') || normalized.includes('cycling')) {
+    return 'bike'
+  }
+  if (normalized.includes('swim') || normalized.includes('swimming')) {
+    return 'swim'
+  }
+  if (normalized.includes('lift') || normalized.includes('lifting')) {
+    return 'lift'
+  }
+  
+  return normalized
+}
+
+// Helper function to safely parse dates
+const safeParseDate = (dateValue: any): Date | null => {
+  if (!dateValue) return null
+  
+  try {
+    // Handle Firestore Timestamp
+    if (dateValue.toDate) {
+      return dateValue.toDate()
+    }
+    const date = new Date(dateValue)
+    return isNaN(date.getTime()) ? null : date
+  } catch {
+    return null
+  }
+}
+
+// Helper function to get date in YYYY-MM-DD format (EST)
+const getDateKey = (date: Date = new Date()): string => {
+  try {
+    // Convert to EST (UTC-5)
+    const estDate = new Date(date.getTime() - (5 * 60 * 60 * 1000))
+    return estDate.toISOString().split('T')[0]
+  } catch {
+    // Fallback to current date if there's an error
+    const now = new Date()
+    const estDate = new Date(now.getTime() - (5 * 60 * 60 * 1000))
+    return estDate.toISOString().split('T')[0]
+  }
+}
+
+// Function to calculate real-time badges
+const calculateRealTimeBadges = (activities: any[]): { [badgeId: string]: any } => {
+  const now = new Date()
+  const today = getDateKey(now)
+  
+  // Get today's activities
+  const todayActivities = activities.filter(activity => {
+    const activityDate = safeParseDate(activity.date)
+    if (!activityDate) return false
+    return getDateKey(activityDate) === today
+  })
+
+  const todayMeters = todayActivities.reduce((sum, activity) => sum + (Number(activity.points) || 0), 0)
+  const todayWorkoutTypes = new Set(todayActivities.map(activity => normalizeActivityType(activity.activity)).filter(Boolean))
+
+  // Debug logging for Jack of All Trades
+  console.log('🔍 Workout Submission - Real-time Badge Debug:')
+  console.log('  Today (EST):', today)
+  console.log('  Today activities count:', todayActivities.length)
+  console.log('  Today activities:', todayActivities.map(a => ({ activity: a.activity, date: a.date })))
+  console.log('  Normalized workout types:', Array.from(todayWorkoutTypes))
+  console.log('  Unique workout types count:', todayWorkoutTypes.size)
+
+  return {
+    "100k-day": {
+      earned: todayMeters >= 100000,
+      earnedDate: todayMeters >= 100000 ? now : undefined,
+      progress: Math.min(todayMeters, 100000),
+      maxProgress: 100000,
+      lastUpdated: now
+    },
+    "jack-of-all-trades": {
+      earned: todayWorkoutTypes.size >= 6,
+      earnedDate: todayWorkoutTypes.size >= 6 ? now : undefined,
+      progress: Math.min(todayWorkoutTypes.size, 6),
+      maxProgress: 6,
+      lastUpdated: now
+    },
+    "tri": {
+      earned: todayMeters >= 30000,
+      earnedDate: todayMeters >= 30000 ? now : undefined,
+      progress: Math.min(todayMeters, 30000),
+      maxProgress: 30000,
+      lastUpdated: now
+    }
+  }
+}
+
+// Helper function to calculate day streak from activities
+const calculateDayStreak = (activities: any[]): number => {
+  if (activities.length === 0) return 0
+
+  // Get unique dates where user worked out
+  const workoutDates = new Set<string>()
+  activities.forEach((activity) => {
+    if (activity.date) {
+      let date: Date
+      if (activity.date.toDate) {
+        date = activity.date.toDate()
+      } else {
+        date = new Date(activity.date)
+      }
+      workoutDates.add(date.toDateString())
+    }
+  })
+
+  const sortedDates = Array.from(workoutDates)
+    .map(dateStr => new Date(dateStr))
+    .sort((a, b) => b.getTime() - a.getTime()) // Sort descending (most recent first)
+
+  if (sortedDates.length === 0) return 0
+
+  let streak = 0
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  // Check if user worked out today
+  const todayStr = today.toDateString()
+  const hasWorkedOutToday = sortedDates.some(date => date.toDateString() === todayStr)
+
+  if (hasWorkedOutToday) {
+    streak = 1
+    // Count consecutive days from today backwards
+    for (let i = 1; i < sortedDates.length; i++) {
+      const currentDate = sortedDates[i]
+      const previousDate = sortedDates[i - 1]
+      
+      const diffTime = previousDate.getTime() - currentDate.getTime()
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      
+      if (diffDays === 1) {
+        streak++
+      } else {
+        break
+      }
+    }
+  } else {
+    // Count consecutive days from most recent workout
+    for (let i = 0; i < sortedDates.length - 1; i++) {
+      const currentDate = sortedDates[i]
+      const nextDate = sortedDates[i + 1]
+      
+      const diffTime = currentDate.getTime() - nextDate.getTime()
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      
+      if (diffDays === 1) {
+        streak++
+      } else {
+        break
+      }
+    }
+  }
+
+  return streak
+}
+
+// Function to update badges after workout submission
+const updateUserBadges = async (userId: string, newWorkoutData: any) => {
+  try {
+    // Get current user data
+    const userRef = doc(db, "users", userId)
+    const userSnap = await getDoc(userRef)
+    
+    if (!userSnap.exists()) {
+      console.error("User not found for badge update")
+      return []
+    }
+    
+    const userData = userSnap.data()
+    const activities = userData.activities || []
+    
+    // Get current badge data to compare
+    const badgeRef = doc(db, 'badges', userId)
+    const badgeSnap = await getDoc(badgeRef)
+    const oldBadges = badgeSnap.exists() ? badgeSnap.data().badges || {} : {}
+    
+    // Calculate required user data for badge calculations
+    const totalMeters = activities.reduce((sum: number, activity: any) => {
+      return sum + (Number(activity.points) || 0)
+    }, 0)
+    
+    const dayStreak = calculateDayStreak(activities)
+    
+    // Create enhanced user data with calculated values
+    const enhancedUserData = {
+      id: userId,
+      name: userData.username || "Unknown User",
+      profileImage: userData.profileImage || "/placeholder.png",
+      totalMeters,
+      dayStreak,
+      dailyMeters: 0,
+      weeklyMeters: 0,
+      deficit: Math.max(0, 1000000 - totalMeters),
+      dailyRequired: 0,
+      dailyRequiredWithRest: 0,
+      topWorkoutType: 'erg' as any,
+      workouts: []
+    }
+    
+    // Calculate new badges
+    const newBadges = calculateAllBadges(enhancedUserData, activities)
+    
+    // Calculate real-time badges
+    const realTimeBadges = calculateRealTimeBadges(activities)
+    
+    // Merge badges, prioritizing real-time calculations for time-based badges
+    const mergedBadges = {
+      ...newBadges,
+      ...realTimeBadges
+    }
+    
+    // Debug logging for Jack of All Trades
+    console.log('🔍 Workout Submission - Jack of All Trades Debug:')
+    console.log('  New workout data:', newWorkoutData)
+    console.log('  Total activities:', activities.length)
+    console.log('  Jack of All Trades badge (merged):', mergedBadges["jack-of-all-trades"])
+    
+    // Find newly earned badges by comparing old and new states
+    const newlyEarnedBadges = Object.entries(mergedBadges)
+      .filter(([badgeId, newBadge]) => {
+        const oldBadge = oldBadges[badgeId]
+        // Only count as newly earned if:
+        // 1. Badge is currently earned
+        // 2. Badge wasn't earned before OR was earned just now (has earnedDate)
+        return newBadge.earned && 
+               (!oldBadge || !oldBadge.earned) && 
+               newBadge.earnedDate
+      })
+      .map(([badgeId, badge]) => ({
+        id: badgeId,
+        name: getBadgeName(badgeId),
+        earnedDate: badge.earnedDate
+      }))
+    
+    // Create badge data document
+    const badgeData: UserBadgeData = {
+      userId,
+      badges: mergedBadges,
+      lastCalculated: new Date()
+    }
+
+    // Clean the data for Firestore
+    const cleanedData = cleanBadgeDataForFirestore(badgeData)
+
+    // Save to Firestore
+    await updateDoc(badgeRef, cleanedData)
+    
+    console.log("✅ Badges updated after workout submission")
+    if (newlyEarnedBadges.length > 0) {
+      console.log("🎉 Newly earned badges:", newlyEarnedBadges.map(b => b.name))
+    }
+    
+    return newlyEarnedBadges
+    
+  } catch (error) {
+    console.error("❌ Failed to update badges:", error)
+    return []
+  }
+}
+
+// Helper function to get badge names
+const getBadgeName = (badgeId: string): string => {
+  const badgeNames: Record<string, string> = {
+    "million-meter-champion": "Million Meter Champion",
+    "100k-day": "Centurion",
+    "jack-of-all-trades": "Jack of All Trades",
+    "marathon": "Marathon",
+    "monthly-master": "Monthly Master",
+    "nates-favorite": "Nate's Favorite",
+    "gym-rat": "Gym Rat",
+    "tri": "Tri",
+    "early-bird": "Early Bird",
+    "erg-master": "Erg Master",
+    "fish": "Fish",
+    "zigzag-method": "Zigzag Method",
+    "mystery-badge": "???",
+    "just-do-track-bruh": "Just Do Track Bruh",
+    "lend-a-hand": "Lend a Hand",
+    "week-warrior": "Week Warrior",
+    "fresh-legs": "Fresh Legs"
+  }
+  
+  return badgeNames[badgeId] || badgeId
+}
 
 export default function WorkoutSubmission() {
   const { toast } = useToast()
@@ -123,10 +455,23 @@ export default function WorkoutSubmission() {
         activities: arrayUnion(workoutData)
       })
 
+      // Update badges after workout submission
+      const newlyEarnedBadges = await updateUserBadges(user.id, workoutData)
+
       toast({
         title: "Workout submitted!",
         description: `${new Intl.NumberFormat().format(convertedMeters)} meters of ${getWorkoutTypeName(selectedWorkoutType)} recorded.`,
       })
+
+      // Show badge notifications if any were earned
+      if (newlyEarnedBadges.length > 0) {
+        setTimeout(() => {
+          toast({
+            title: "🎉 New Badges Earned!",
+            description: `Congratulations! You've earned: ${newlyEarnedBadges.map(badge => badge.name).join(", ")}`,
+          })
+        }, 1000) // Delay to show after the workout submission toast
+      }
 
       // Reset form
       setDistance("")

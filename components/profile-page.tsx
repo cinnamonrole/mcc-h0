@@ -13,9 +13,11 @@ import { ChevronDown, ChevronUp, Activity, Calendar, Flame, Calculator, Plus, Lo
 import { useUserData } from "@/hooks/use-user-data"
 import { UserProgressChart } from "@/components/user-progress-chart"
 import { WorkoutGallery } from "@/components/workout-gallery"
+import { BadgeDisplayCase } from "@/components/badge-display-case"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useLeaderboardData } from "@/hooks/use-leaderboard-data"
 import { useAuth } from "@/hooks/use-auth"
+import { useBadgeData } from "@/hooks/use-badge-data"
 import Link from "next/link"
 import { doc, updateDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
@@ -23,27 +25,6 @@ import { useToast } from "@/hooks/use-toast"
 
 interface ProfilePageProps {
   userId?: string
-}
-
-// Mock function to get badge count for a user
-const getBadgeCount = (userId: string): number => {
-  // This would normally come from your badge system
-  // For now, returning mock data based on user
-  const badgeCounts: Record<string, number> = {
-    "current-user": 6,
-    "1": 8, // Alex Johnson
-    "2": 5, // Sam Williams
-    "3": 7, // Jordan Smith
-    "4": 4, // Taylor Brown
-    "5": 6, // Morgan Davis
-    "6": 3, // Casey Miller
-    "7": 5, // Riley Wilson
-    "8": 4, // Jamie Garcia
-    "9": 6, // Avery Martinez
-    "10": 3, // Drew Thompson
-  }
-
-  return badgeCounts[userId] || 2
 }
 
 export default function ProfilePage({ userId }: ProfilePageProps) {
@@ -58,6 +39,13 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
+
+  // Get the actual user ID for badge data
+  const actualUserId = selectedUserId === "current-user" ? user?.id : selectedUserId
+  const { badges } = useBadgeData(actualUserId)
+
+  // Calculate real badge count from actual badge data
+  const badgeCount = Object.values(badges).filter(badge => badge.earned).length
 
   if (!userData) {
     return (
@@ -74,7 +62,6 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
 
   const percentComplete = Math.min(100, (totalMeters / 1000000) * 100)
   const workoutCount = workouts.length
-  const badgeCount = getBadgeCount(selectedUserId)
 
   // Calculate current rank from leaderboard data
   const getCurrentRank = (): number => {
@@ -449,6 +436,9 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Badge Display Case */}
+      <BadgeDisplayCase userId={selectedUserId === "current-user" ? user?.id : selectedUserId} />
 
       {/* Profile Picture Upload and Sign Out Buttons - Only show when viewing own profile */}
       {isCurrentUser && (

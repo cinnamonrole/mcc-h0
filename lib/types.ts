@@ -26,3 +26,38 @@ export interface UserData {
   weeklyMetersByType?: { [key: string]: number }
   dayStreak: number
 }
+
+export interface BadgeProgress {
+  earned: boolean
+  earnedDate?: Date
+  progress: number
+  maxProgress: number
+  lastUpdated: Date
+}
+
+export interface UserBadgeData {
+  userId: string
+  badges: {
+    [badgeId: string]: BadgeProgress
+  }
+  lastCalculated: Date
+}
+
+export type BadgeId = 
+  | "million-meter-champion"
+  | "100k-day"
+  | "jack-of-all-trades"
+  | "marathon"
+  | "monthly-master"
+  | "nates-favorite"
+  | "gym-rat"
+  | "tri"
+  | "early-bird"
+  | "erg-master"
+  | "fish"
+  | "zigzag-method"
+  | "mystery-badge"
+  | "just-do-track-bruh"
+  | "lend-a-hand"
+  | "week-warrior"
+  | "fresh-legs"
