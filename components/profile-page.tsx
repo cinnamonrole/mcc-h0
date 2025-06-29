@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { ChevronDown, ChevronUp, Activity, Calendar, Flame, Calculator, Plus, LogOut, Trophy, Sparkles, Award } from "lucide-react"
+import { ChevronDown, ChevronUp, Activity, Calendar, Flame, Calculator, Plus, LogOut, Trophy, Sparkles, Award, Camera, Upload } from "lucide-react"
 import { useUserData } from "@/hooks/use-user-data"
 import { UserProgressChart } from "@/components/user-progress-chart"
 import { WorkoutGallery } from "@/components/workout-gallery"
@@ -17,6 +17,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useLeaderboardData } from "@/hooks/use-leaderboard-data"
 import { useAuth } from "@/hooks/use-auth"
 import Link from "next/link"
+import { doc, updateDoc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import { useToast } from "@/hooks/use-toast"
 
 interface ProfilePageProps {
   userId?: string
@@ -52,6 +55,9 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
   const [metersPerDay, setMetersPerDay] = useState("5000")
   const [calculatedDays, setCalculatedDays] = useState<number | null>(null)
   const [isMoreStatsOpen, setIsMoreStatsOpen] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { toast } = useToast()
 
   if (!userData) {
     return (
@@ -99,6 +105,70 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
   // Check if this is the current user and they have no workouts
   const isCurrentUser = selectedUserId === "current-user" || selectedUserId === user?.id
   const hasNoWorkouts = workoutCount === 0
+
+  const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !user) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please select an image file (JPEG, PNG, etc.)",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select an image smaller than 5MB",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsUploading(true)
+
+    try {
+      // Convert file to base64 for storage
+      const reader = new FileReader()
+      reader.onload = async (e) => {
+        const base64String = e.target?.result as string
+        
+        // Update the user document in Firestore
+        const userRef = doc(db, "users", user.id)
+        await updateDoc(userRef, {
+          profileImage: base64String
+        })
+
+        toast({
+          title: "Profile picture updated",
+          description: "Your profile picture has been successfully updated!",
+        })
+
+        // Refresh the page to show the new image
+        window.location.reload()
+      }
+      
+      reader.readAsDataURL(file)
+    } catch (error) {
+      console.error("Error uploading profile picture:", error)
+      toast({
+        title: "Upload failed",
+        description: "Failed to update profile picture. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click()
+  }
 
   return (
     <div className="container px-4 py-6">
@@ -380,20 +450,47 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
         </TabsContent>
       </Tabs>
 
-      {/* Sign Out Button - Only show when viewing own profile */}
+      {/* Profile Picture Upload and Sign Out Buttons - Only show when viewing own profile */}
       {isCurrentUser && (
-        <Card className="mt-6">
-          <CardContent className="p-4">
-            <Button
-              variant="outline"
-              onClick={signOut}
-              className="w-full text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="space-y-4 mt-6">
+          <Card>
+            <CardContent className="p-4">
+              <Button
+                variant="outline"
+                onClick={triggerFileInput}
+                disabled={isUploading}
+                className="w-full text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950"
+              >
+                {isUploading ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                ) : (
+                  <Camera className="h-4 w-4 mr-2" />
+                )}
+                {isUploading ? "Uploading..." : "Add/Change Profile Picture"}
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleProfilePictureUpload}
+                className="hidden"
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <Button
+                variant="outline"
+                onClick={signOut}
+                className="w-full text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   )

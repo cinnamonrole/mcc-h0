@@ -150,7 +150,7 @@ export function useUserData(userId?: string, workoutType?: string) {
         const realUserData: UserData = {
           id: targetUserId,
           name: firestoreData.username || "Unknown User",
-          profileImage: "/placeholder.png", // You can add profile image support later
+          profileImage: firestoreData.profileImage || "/placeholder.png",
           totalMeters,
           dailyMeters: 0, // Will be calculated if needed for time-based features
           weeklyMeters: 0, // Will be calculated if needed for time-based features
