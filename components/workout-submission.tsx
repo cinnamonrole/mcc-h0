@@ -120,14 +120,6 @@ const calculateRealTimeBadges = (activities: any[]): { [badgeId: string]: any } 
   const todayMeters = todayActivities.reduce((sum, activity) => sum + (Number(activity.points) || 0), 0)
   const todayWorkoutTypes = new Set(todayActivities.map(activity => normalizeActivityType(activity.activity)).filter(Boolean))
 
-  // Debug logging for Jack of All Trades
-  console.log('🔍 Workout Submission - Real-time Badge Debug:')
-  console.log('  Today (EST):', today)
-  console.log('  Today activities count:', todayActivities.length)
-  console.log('  Today activities:', todayActivities.map(a => ({ activity: a.activity, date: a.date })))
-  console.log('  Normalized workout types:', Array.from(todayWorkoutTypes))
-  console.log('  Unique workout types count:', todayWorkoutTypes.size)
-
   return {
     "100k-day": {
       earned: todayMeters >= 100000,
@@ -275,12 +267,6 @@ const updateUserBadges = async (userId: string, newWorkoutData: any) => {
       ...newBadges,
       ...realTimeBadges
     }
-    
-    // Debug logging for Jack of All Trades
-    console.log('🔍 Workout Submission - Jack of All Trades Debug:')
-    console.log('  New workout data:', newWorkoutData)
-    console.log('  Total activities:', activities.length)
-    console.log('  Jack of All Trades badge (merged):', mergedBadges["jack-of-all-trades"])
     
     // Find newly earned badges by comparing old and new states
     const newlyEarnedBadges = Object.entries(mergedBadges)

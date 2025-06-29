@@ -460,7 +460,7 @@ function BadgeCard({ achievement }: { achievement: Achievement }) {
         </div>
 
         {/* Progress indicator for unearned badges */}
-        {!achievement.earned && typeof achievement.progress === 'number' && typeof achievement.maxProgress === 'number' && (
+        {!achievement.earned && typeof achievement.progress === 'number' && typeof achievement.maxProgress === 'number' && achievement.maxProgress > 1 && (
           <div className="absolute bottom-1 left-1 right-1">
             <Progress value={(achievement.progress / achievement.maxProgress) * 100} className="h-1" />
           </div>
@@ -486,7 +486,7 @@ function BadgeCard({ achievement }: { achievement: Achievement }) {
         {achievement.earned && (
           <div className="text-green-400 font-medium">✓ Earned!</div>
         )}
-        {!achievement.earned && typeof achievement.progress === 'number' && typeof achievement.maxProgress === 'number' && (
+        {!achievement.earned && typeof achievement.progress === 'number' && typeof achievement.maxProgress === 'number' && achievement.maxProgress > 1 && (
           <div className="text-slate-400">
             {new Intl.NumberFormat().format(achievement.progress)} /{" "}
             {new Intl.NumberFormat().format(achievement.maxProgress)}

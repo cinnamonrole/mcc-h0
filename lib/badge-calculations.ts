@@ -245,6 +245,15 @@ export const calculateBadgeProgress = (
         lastUpdated: now
       }
 
+    case "week-warrior":
+      return {
+        earned: userData.dayStreak >= 7,
+        earnedDate: userData.dayStreak >= 7 ? now : undefined,
+        progress: Math.min(userData.dayStreak, 7),
+        maxProgress: 7,
+        lastUpdated: now
+      }
+
     case "lend-a-hand":
       // Manual badge - no calculation needed
       return {

@@ -104,7 +104,7 @@ const isBefore7AM = (activity: any): boolean => {
 }
 
 // Function to calculate real-time badges
-const calculateRealTimeBadges = (activities: any[]): { [badgeId: string]: BadgeProgress } => {
+const calculateRealTimeBadges = (activities: any[], userData: any): { [badgeId: string]: BadgeProgress } => {
   const now = new Date()
   const today = getDateKey(now)
   
@@ -117,14 +117,6 @@ const calculateRealTimeBadges = (activities: any[]): { [badgeId: string]: BadgeP
 
   const todayMeters = todayActivities.reduce((sum, activity) => sum + (Number(activity.points) || 0), 0)
   const todayWorkoutTypes = new Set(todayActivities.map(activity => normalizeActivityType(activity.activity)).filter(Boolean))
-
-  // Debug logging for Jack of All Trades
-  console.log('🔍 Jack of All Trades Debug:')
-  console.log('  Today (EST):', today)
-  console.log('  Today activities count:', todayActivities.length)
-  console.log('  Today activities:', todayActivities.map(a => ({ activity: a.activity, date: a.date })))
-  console.log('  Normalized workout types:', Array.from(todayWorkoutTypes))
-  console.log('  Unique workout types count:', todayWorkoutTypes.size)
 
   return {
     "100k-day": {
@@ -146,6 +138,13 @@ const calculateRealTimeBadges = (activities: any[]): { [badgeId: string]: BadgeP
       earnedDate: todayMeters >= 30000 ? now : undefined,
       progress: Math.min(todayMeters, 30000),
       maxProgress: 30000,
+      lastUpdated: now
+    },
+    "week-warrior": {
+      earned: userData.dayStreak >= 7,
+      earnedDate: userData.dayStreak >= 7 ? now : undefined,
+      progress: Math.min(userData.dayStreak, 7),
+      maxProgress: 7,
       lastUpdated: now
     }
   }
@@ -193,7 +192,7 @@ export function useBadgeData(userId?: string) {
       const lifetimeBadges = calculateAllBadges(userData, activities)
       
       // Calculate real-time badges
-      const realTimeBadges = calculateRealTimeBadges(activities)
+      const realTimeBadges = calculateRealTimeBadges(activities, userData)
       
       // Merge badges, prioritizing real-time calculations for time-based badges
       const mergedBadges = {
