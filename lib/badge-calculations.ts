@@ -135,7 +135,7 @@ export const calculateBadgeProgress = (
       return {
         earned: false,
         progress: 0,
-        maxProgress: 42195,
+        maxProgress: 1,
         lastUpdated: now
       }
 

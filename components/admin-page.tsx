@@ -9,12 +9,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
 import { useLeaderboardData } from "@/hooks/use-leaderboard-data"
-import { Shield, Minus, RotateCcw, Eye, EyeOff, AlertTriangle, Camera, User } from "lucide-react"
+import { Shield, Minus, RotateCcw, Eye, EyeOff, AlertTriangle, Camera, User, Award } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { doc, updateDoc } from "firebase/firestore"
+import { doc, updateDoc, getDoc, setDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
+import { BadgeId, UserBadgeData, BadgeProgress } from "@/lib/types"
+import { getAllBadgeIds } from "@/lib/badge-calculations"
 
 export default function AdminPage() {
   const { toast } = useToast()
@@ -28,10 +31,36 @@ export default function AdminPage() {
   const [resetClickCount, setResetClickCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [isUploadingProfile, setIsUploadingProfile] = useState(false)
+  const [isManagingBadges, setIsManagingBadges] = useState(false)
+  const [userBadges, setUserBadges] = useState<{ [badgeId: string]: boolean }>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const ADMIN_PASSWORD = "diddyparty"
   const RESET_CLICKS_REQUIRED = 20
+
+  // Get all available badges
+  const allBadges = getAllBadgeIds()
+  
+  // Badge display names
+  const badgeNames: Record<BadgeId, string> = {
+    "million-meter-champion": "Million Meter Champion",
+    "100k-day": "Centurion",
+    "jack-of-all-trades": "Jack of All Trades",
+    "marathon": "Marathon",
+    "monthly-master": "Monthly Master",
+    "nates-favorite": "Nate's Favorite",
+    "gym-rat": "Gym Rat",
+    "tri": "Tri",
+    "early-bird": "Early Bird",
+    "erg-master": "Erg Master",
+    "fish": "Fish",
+    "zigzag-method": "Zigzag Method",
+    "mystery-badge": "???",
+    "just-do-track-bruh": "Just Do Track Bruh",
+    "lend-a-hand": "Lend a Hand",
+    "week-warrior": "Week Warrior",
+    "fresh-legs": "Fresh Legs"
+  }
 
   useEffect(() => {
     // Check if admin is already authenticated
@@ -180,6 +209,108 @@ export default function AdminPage() {
     fileInputRef.current?.click()
   }
 
+  const loadUserBadges = async (userId: string) => {
+    try {
+      const badgeRef = doc(db, 'badges', userId)
+      const badgeSnap = await getDoc(badgeRef)
+      
+      if (badgeSnap.exists()) {
+        const badgeData = badgeSnap.data() as UserBadgeData
+        const earnedBadges: { [badgeId: string]: boolean } = {}
+        
+        allBadges.forEach(badgeId => {
+          earnedBadges[badgeId] = badgeData.badges[badgeId]?.earned || false
+        })
+        
+        setUserBadges(earnedBadges)
+      } else {
+        // Initialize with all badges as unearned
+        const initialBadges: { [badgeId: string]: boolean } = {}
+        allBadges.forEach(badgeId => {
+          initialBadges[badgeId] = false
+        })
+        setUserBadges(initialBadges)
+      }
+    } catch (error) {
+      console.error('Error loading user badges:', error)
+      toast({
+        title: "Error",
+        description: "Failed to load user badges",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleUserSelection = (userId: string) => {
+    setSelectedRower(userId)
+    if (userId) {
+      loadUserBadges(userId)
+    } else {
+      setUserBadges({})
+    }
+  }
+
+  const handleBadgeToggle = async (badgeId: BadgeId, earned: boolean) => {
+    if (!selectedRower) return
+
+    setIsManagingBadges(true)
+    
+    try {
+      const badgeRef = doc(db, 'badges', selectedRower)
+      const badgeSnap = await getDoc(badgeRef)
+      
+      let badgeData: UserBadgeData
+      
+      if (badgeSnap.exists()) {
+        badgeData = badgeSnap.data() as UserBadgeData
+      } else {
+        // Create new badge data if it doesn't exist
+        badgeData = {
+          userId: selectedRower,
+          badges: {},
+          lastCalculated: new Date()
+        }
+      }
+      
+      // Update the specific badge
+      const now = new Date()
+      badgeData.badges[badgeId] = {
+        earned,
+        earnedDate: earned ? now : undefined,
+        progress: earned ? 1 : 0,
+        maxProgress: 1,
+        lastUpdated: now
+      }
+      
+      // Update Firestore
+      await setDoc(badgeRef, badgeData)
+      
+      // Update local state
+      setUserBadges(prev => ({
+        ...prev,
+        [badgeId]: earned
+      }))
+      
+      const rowerName = leaderboardData?.find((user) => user.id === selectedRower)?.name || "Unknown"
+      const action = earned ? "granted" : "revoked"
+      
+      toast({
+        title: "Badge Updated",
+        description: `${badgeNames[badgeId]} badge ${action} to ${rowerName}`,
+      })
+      
+    } catch (error) {
+      console.error('Error updating badge:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update badge",
+        variant: "destructive",
+      })
+    } finally {
+      setIsManagingBadges(false)
+    }
+  }
+
   const handleResetClick = () => {
     const newCount = resetClickCount + 1
     setResetClickCount(newCount)
@@ -290,7 +421,7 @@ export default function AdminPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>Select Rower</Label>
-              <Select value={selectedRower} onValueChange={setSelectedRower}>
+              <Select value={selectedRower} onValueChange={handleUserSelection}>
                 <SelectTrigger>
                   <SelectValue placeholder="Choose a rower" />
                 </SelectTrigger>
@@ -305,9 +436,10 @@ export default function AdminPage() {
             </div>
 
             <Tabs defaultValue="profile" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="profile">Profile Picture</TabsTrigger>
-                <TabsTrigger value="meters">Subtract Meters</TabsTrigger>
+                <TabsTrigger value="meters">Meters</TabsTrigger>
+                <TabsTrigger value="badges">Badges</TabsTrigger>
               </TabsList>
 
               <TabsContent value="profile" className="space-y-4">
@@ -391,6 +523,58 @@ export default function AdminPage() {
                   >
                     {isLoading ? "Processing..." : `${meterOperation === "add" ? "Add" : "Subtract"} Meters`}
                   </Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="badges" className="space-y-4">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Badge Management</Label>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      Check/uncheck badges to grant or revoke them for the selected user
+                    </p>
+                  </div>
+
+                  {selectedRower ? (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {allBadges.map((badgeId) => (
+                        <div
+                          key={badgeId}
+                          className={cn(
+                            "flex items-center space-x-2 p-3 rounded-lg border transition-colors",
+                            userBadges[badgeId]
+                              ? "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800"
+                              : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                          )}
+                        >
+                          <Checkbox
+                            id={badgeId}
+                            checked={userBadges[badgeId] || false}
+                            onCheckedChange={(checked) => 
+                              handleBadgeToggle(badgeId, checked as boolean)
+                            }
+                            disabled={isManagingBadges}
+                          />
+                          <Label
+                            htmlFor={badgeId}
+                            className={cn(
+                              "text-sm font-medium cursor-pointer",
+                              userBadges[badgeId]
+                                ? "text-green-700 dark:text-green-300"
+                                : "text-slate-700 dark:text-slate-300"
+                            )}
+                          >
+                            {badgeNames[badgeId]}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                      <Award className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>Select a user to manage their badges</p>
+                    </div>
+                  )}
                 </div>
               </TabsContent>
             </Tabs>
