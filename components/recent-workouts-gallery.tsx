@@ -65,7 +65,7 @@ export function RecentWorkoutsGallery() {
   }
 
   const handleCardClick = (userId: string) => {
-    router.push(`/profile/${userId}`)
+    router.push(`/profile?id=${userId}`)
   }
 
   const handleImageClick = (e: React.MouseEvent, imageUrl: string) => {

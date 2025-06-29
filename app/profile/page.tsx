@@ -5,9 +5,12 @@ import ProfilePage from "@/components/profile-page"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { User, UserPlus } from "lucide-react"
+import { useSearchParams } from "next/navigation"
 
 export default function Profile() {
   const { isGuest, signOut } = useAuth()
+  const searchParams = useSearchParams()
+  const userId = searchParams.get("id") || undefined
 
   if (isGuest) {
     return (
@@ -31,5 +34,5 @@ export default function Profile() {
     )
   }
 
-  return <ProfilePage />
+  return <ProfilePage userId={userId} />
 }

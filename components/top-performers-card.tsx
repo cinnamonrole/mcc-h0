@@ -179,7 +179,7 @@ export default function TopPerformersCard() {
   ]
 
   const handleProfileClick = (userId: string) => {
-    router.push(`/profile/${userId}`)
+    router.push(`/profile?id=${userId}`)
   }
 
   return (

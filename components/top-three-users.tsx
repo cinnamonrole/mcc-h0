@@ -32,7 +32,7 @@ export function TopThreeUsers({ users }: TopThreeUsersProps) {
                   <Medal className="h-4 w-4 text-white" />
                 </div>
               </div>
-              <Link href={`/profile/${second.id}`}>
+              <Link href={`/profile?id=${second.id}`}>
                 <Avatar className="h-16 w-16 ring-4 ring-slate-300 shadow-xl" hover="animated">
                   <AvatarImage src={second.profileImage || "/placeholder.png"} alt={second.name} />
                   <AvatarFallback className="bg-gradient-to-br from-slate-200 to-slate-400 text-slate-800 font-bold">
@@ -64,7 +64,7 @@ export function TopThreeUsers({ users }: TopThreeUsersProps) {
                   <Crown className="h-5 w-5 text-white" />
                 </div>
               </div>
-              <Link href={`/profile/${first.id}`}>
+              <Link href={`/profile?id=${first.id}`}>
                 <Avatar className="h-20 w-20 ring-4 ring-yellow-400 shadow-2xl" hover="animated">
                   <AvatarImage src={first.profileImage || "/placeholder.png"} alt={first.name} />
                   <AvatarFallback className="bg-gradient-to-br from-yellow-200 to-yellow-500 text-yellow-900 font-bold">
@@ -96,7 +96,7 @@ export function TopThreeUsers({ users }: TopThreeUsersProps) {
                   <Award className="h-4 w-4 text-white" />
                 </div>
               </div>
-              <Link href={`/profile/${third.id}`}>
+              <Link href={`/profile?id=${third.id}`}>
                 <Avatar className="h-14 w-14 ring-4 ring-orange-300 shadow-xl" hover="animated">
                   <AvatarImage src={third.profileImage || "/placeholder.png"} alt={third.name} />
                   <AvatarFallback className="bg-gradient-to-br from-orange-200 to-orange-500 text-orange-900 font-bold">

@@ -13,7 +13,7 @@ export function UserLeaderboardCard({ user, rank }: UserLeaderboardCardProps) {
   const percentComplete = Math.min(100, (user.totalMeters / 1000000) * 100)
 
   return (
-    <Link href={`/profile/${user.id}`}>
+    <Link href={`/profile?id=${user.id}`}>
       <Card className="hover:bg-slate-50 dark:hover:bg-slate-900" hover="lift">
         <CardContent className="p-4">
           <div className="flex items-center">
