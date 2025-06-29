@@ -58,6 +58,22 @@ export const getDateKey = (date: Date = new Date()): string => {
   }
 }
 
+// Helper function to get current date in EST timezone for day-based calculations
+export const getCurrentDateEST = (): Date => {
+  const now = new Date()
+  // Convert to EST (UTC-5) and set to midnight
+  const estDate = new Date(now.getTime() - (5 * 60 * 60 * 1000))
+  estDate.setHours(0, 0, 0, 0)
+  return estDate
+}
+
+// Helper function to convert any date to EST timezone for day-based calculations
+export const convertToEST = (date: Date): Date => {
+  const estDate = new Date(date.getTime() - (5 * 60 * 60 * 1000))
+  estDate.setHours(0, 0, 0, 0)
+  return estDate
+}
+
 // Helper function to check if it's a new day (midnight EST)
 export const isNewDay = (lastUpdate: Date): boolean => {
   const now = new Date()

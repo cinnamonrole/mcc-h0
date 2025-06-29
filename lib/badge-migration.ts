@@ -2,6 +2,7 @@ import { collection, getDocs, doc, setDoc } from 'firebase/firestore'
 import { db } from './firebase'
 import { UserData, UserBadgeData, BadgeProgress } from './types'
 import { calculateAllBadges } from './badge-calculations'
+import { getCurrentDateEST, convertToEST } from './badge-calculations'
 
 // Helper function to clean badge data for Firestore (remove undefined values)
 const cleanBadgeDataForFirestore = (badgeData: UserBadgeData): any => {
@@ -34,7 +35,7 @@ const cleanBadgeDataForFirestore = (badgeData: UserBadgeData): any => {
 const calculateDayStreak = (activities: any[]): number => {
   if (activities.length === 0) return 0
 
-  // Get unique dates where user worked out
+  // Get unique dates where user worked out (converted to EST)
   const workoutDates = new Set<string>()
   activities.forEach((activity) => {
     if (activity.date) {
@@ -44,23 +45,23 @@ const calculateDayStreak = (activities: any[]): number => {
       } else {
         date = new Date(activity.date)
       }
-      workoutDates.add(date.toDateString())
+      const estDate = convertToEST(date)
+      workoutDates.add(estDate.toISOString().split('T')[0]) // YYYY-MM-DD format
     }
   })
 
   const sortedDates = Array.from(workoutDates)
-    .map(dateStr => new Date(dateStr))
+    .map(dateStr => new Date(dateStr + 'T00:00:00-05:00')) // Convert back to EST Date
     .sort((a, b) => b.getTime() - a.getTime()) // Sort descending (most recent first)
 
   if (sortedDates.length === 0) return 0
 
   let streak = 0
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const today = getCurrentDateEST()
 
-  // Check if user worked out today
-  const todayStr = today.toDateString()
-  const hasWorkedOutToday = sortedDates.some(date => date.toDateString() === todayStr)
+  // Check if user worked out today (EST)
+  const todayStr = today.toISOString().split('T')[0]
+  const hasWorkedOutToday = sortedDates.some(date => date.toISOString().split('T')[0] === todayStr)
 
   if (hasWorkedOutToday) {
     streak = 1

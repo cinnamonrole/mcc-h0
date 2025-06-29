@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { collection, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
+import { getCurrentDateEST, convertToEST } from "@/lib/badge-calculations"
 import type { UserData } from "@/lib/types"
 
 // Helper function to normalize activity names for filtering
@@ -99,28 +100,28 @@ export function useLeaderboardData() {
           const calculateStreak = (activities: any[]): number => {
             if (activities.length === 0) return 0
 
-            // Get unique dates where user worked out
+            // Get unique dates where user worked out (converted to EST)
             const workoutDates = new Set<string>()
             activities.forEach((activity: any) => {
               if (activity.date) {
                 const date = activity.date.toDate ? activity.date.toDate() : new Date(activity.date)
-                workoutDates.add(date.toDateString())
+                const estDate = convertToEST(date)
+                workoutDates.add(estDate.toISOString().split('T')[0]) // YYYY-MM-DD format
               }
             })
 
             const sortedDates = Array.from(workoutDates)
-              .map(dateStr => new Date(dateStr))
+              .map(dateStr => new Date(dateStr + 'T00:00:00-05:00')) // Convert back to EST Date
               .sort((a, b) => b.getTime() - a.getTime()) // Sort descending (most recent first)
 
             if (sortedDates.length === 0) return 0
 
             let streak = 0
-            const today = new Date()
-            today.setHours(0, 0, 0, 0)
+            const today = getCurrentDateEST()
 
-            // Check if user worked out today
-            const todayStr = today.toDateString()
-            const hasWorkedOutToday = sortedDates.some(date => date.toDateString() === todayStr)
+            // Check if user worked out today (EST)
+            const todayStr = today.toISOString().split('T')[0]
+            const hasWorkedOutToday = sortedDates.some(date => date.toISOString().split('T')[0] === todayStr)
 
             if (hasWorkedOutToday) {
               streak = 1
@@ -128,9 +129,9 @@ export function useLeaderboardData() {
               for (let i = 1; i <= 365; i++) {
                 const checkDate = new Date(today)
                 checkDate.setDate(today.getDate() - i)
-                const checkDateStr = checkDate.toDateString()
+                const checkDateStr = checkDate.toISOString().split('T')[0]
                 
-                const hasWorkedOutOnDate = sortedDates.some(date => date.toDateString() === checkDateStr)
+                const hasWorkedOutOnDate = sortedDates.some(date => date.toISOString().split('T')[0] === checkDateStr)
                 if (hasWorkedOutOnDate) {
                   streak++
                 } else {
@@ -141,8 +142,8 @@ export function useLeaderboardData() {
               // User didn't work out today, check if they worked out yesterday
               const yesterday = new Date(today)
               yesterday.setDate(today.getDate() - 1)
-              const yesterdayStr = yesterday.toDateString()
-              const hasWorkedOutYesterday = sortedDates.some(date => date.toDateString() === yesterdayStr)
+              const yesterdayStr = yesterday.toISOString().split('T')[0]
+              const hasWorkedOutYesterday = sortedDates.some(date => date.toISOString().split('T')[0] === yesterdayStr)
 
               if (hasWorkedOutYesterday) {
                 streak = 1
@@ -150,9 +151,9 @@ export function useLeaderboardData() {
                 for (let i = 2; i <= 365; i++) {
                   const checkDate = new Date(today)
                   checkDate.setDate(today.getDate() - i)
-                  const checkDateStr = checkDate.toDateString()
+                  const checkDateStr = checkDate.toISOString().split('T')[0]
                   
-                  const hasWorkedOutOnDate = sortedDates.some(date => date.toDateString() === checkDateStr)
+                  const hasWorkedOutOnDate = sortedDates.some(date => date.toISOString().split('T')[0] === checkDateStr)
                   if (hasWorkedOutOnDate) {
                     streak++
                   } else {

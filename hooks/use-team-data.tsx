@@ -62,7 +62,18 @@ export function useTeamData() {
         // Calculate team metrics
         const targetMeters = membersCount * 1000000 // 1M per member
         const deficit = Math.max(0, targetMeters - totalMeters)
-        const remainingDays = 70
+        
+        // Calculate remaining days until Friday, September 5, 2025 EST
+        const targetDate = new Date('2025-09-05T00:00:00-05:00') // Friday, September 5, 2025 EST
+        const now = new Date()
+        
+        // Convert current time to EST for accurate calculation
+        const nowEST = new Date(now.getTime() - (5 * 60 * 60 * 1000)) // Convert to EST (UTC-5)
+        
+        // Calculate difference in days, rounding up to include the current day
+        const timeDiff = targetDate.getTime() - nowEST.getTime()
+        const remainingDays = Math.max(0, Math.ceil(timeDiff / (1000 * 60 * 60 * 24)))
+        
         const dailyTeamRequired = Math.ceil(deficit / remainingDays)
         const dailyPersonRequired = Math.ceil(dailyTeamRequired / membersCount)
 
