@@ -58,21 +58,24 @@ export default function BottomNavigation() {
                 key={item.name}
                 href={isDisabled ? "#" : item.href}
                 className={cn(
-                  "flex flex-col items-center justify-center w-full h-full",
+                  "flex flex-col items-center justify-center w-full h-full transition-all duration-300 ease-in-out transform hover:scale-110 hover:rotate-2",
                   isActive ? "text-blue-600 dark:text-blue-400" : "text-slate-600 dark:text-slate-400",
-                  isDisabled && "opacity-50 cursor-not-allowed",
+                  isDisabled && "opacity-50 cursor-not-allowed hover:scale-100 hover:rotate-0",
                 )}
               >
-                <item.icon className="h-5 w-5" />
-                <span className="text-xs mt-1">{item.name}</span>
+                <item.icon className="h-5 w-5 transition-transform duration-300 hover:scale-125" />
+                <span className="text-xs mt-1 transition-transform duration-300 hover:scale-110">{item.name}</span>
               </Link>
             )
           })}
 
           {isGuest && (
-            <Link href="/signup" className="flex flex-col items-center justify-center w-full h-full text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400">
-              <UserPlus className="h-5 w-5" />
-              <span className="text-xs mt-1">Sign Up</span>
+            <Link 
+              href="/signup" 
+              className="flex flex-col items-center justify-center w-full h-full text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 ease-in-out transform hover:scale-110 hover:rotate-2"
+            >
+              <UserPlus className="h-5 w-5 transition-transform duration-300 hover:scale-125" />
+              <span className="text-xs mt-1 transition-transform duration-300 hover:scale-110">Sign Up</span>
             </Link>
           )}
         </nav>

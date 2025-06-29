@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { ChevronDown, ChevronUp, Activity, Calendar, Flame, Calculator, Plus, LogOut } from "lucide-react"
+import { ChevronDown, ChevronUp, Activity, Calendar, Flame, Calculator, Plus, LogOut, Trophy, Sparkles, Award } from "lucide-react"
 import { useUserData } from "@/hooks/use-user-data"
 import { UserProgressChart } from "@/components/user-progress-chart"
 import { WorkoutGallery } from "@/components/workout-gallery"
@@ -20,6 +20,27 @@ import Link from "next/link"
 
 interface ProfilePageProps {
   userId?: string
+}
+
+// Mock function to get badge count for a user
+const getBadgeCount = (userId: string): number => {
+  // This would normally come from your badge system
+  // For now, returning mock data based on user
+  const badgeCounts: Record<string, number> = {
+    "current-user": 6,
+    "1": 8, // Alex Johnson
+    "2": 5, // Sam Williams
+    "3": 7, // Jordan Smith
+    "4": 4, // Taylor Brown
+    "5": 6, // Morgan Davis
+    "6": 3, // Casey Miller
+    "7": 5, // Riley Wilson
+    "8": 4, // Jamie Garcia
+    "9": 6, // Avery Martinez
+    "10": 3, // Drew Thompson
+  }
+
+  return badgeCounts[userId] || 2
 }
 
 export default function ProfilePage({ userId }: ProfilePageProps) {
@@ -47,7 +68,25 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
 
   const percentComplete = Math.min(100, (totalMeters / 1000000) * 100)
   const workoutCount = workouts.length
-  const daysLeft = 70 // Mock data - in real app this would be calculated
+  const badgeCount = getBadgeCount(selectedUserId)
+
+  // Calculate current rank from leaderboard data
+  const getCurrentRank = (): number => {
+    if (!leaderboardData) return 0
+    
+    // Get the correct user ID to search for
+    const targetUserId = selectedUserId === "current-user" ? user?.id : selectedUserId
+    
+    if (!targetUserId) return 0
+    
+    const userIndex = leaderboardData.findIndex(leaderboardUser => 
+      leaderboardUser.id === targetUserId
+    )
+    
+    return userIndex >= 0 ? userIndex + 1 : 0
+  }
+
+  const currentRank = getCurrentRank()
 
   const calculateDays = () => {
     const metersPerDayNum = Number.parseFloat(metersPerDay)
@@ -80,17 +119,71 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
         </Select>
       </div>
 
-      {/* Profile Header */}
-      <div className="flex items-center mb-6">
-        <Avatar className="h-16 w-16 mr-4">
-          <AvatarImage src={profileImage || "/placeholder.svg"} alt={name} />
-          <AvatarFallback className="bg-blue-100 text-blue-800">{name.substring(0, 2).toUpperCase()}</AvatarFallback>
-        </Avatar>
-        <div>
-          <h1 className="text-2xl font-bold text-blue-900 dark:text-blue-100">{name}</h1>
-          <p className="text-slate-600 dark:text-slate-400">Rower</p>
-        </div>
-      </div>
+      {/* Enhanced Profile Header */}
+      <Card className="mb-6 bg-gradient-to-r from-white/90 to-slate-50/90 dark:from-slate-900/90 dark:to-slate-800/90 backdrop-blur-xl border-white/20 shadow-2xl">
+        <CardContent className="pt-6">
+          <div className="flex items-center">
+            <div className="relative mr-4">
+              {/* Glowing ring around avatar */}
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full blur-md opacity-30 animate-pulse"></div>
+              <Avatar className="h-20 w-20 relative border-4 border-white/50 shadow-xl">
+                <AvatarImage src={profileImage || "/placeholder.svg"} alt={name} />
+                <AvatarFallback className="bg-gradient-to-br from-blue-100 to-purple-100 text-blue-800 text-lg font-bold">
+                  {name.substring(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-3xl font-black bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  {name}
+                </h1>
+
+                {/* Enhanced badge counter */}
+                <div className="relative group">
+                  {/* Multiple glow rings */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-400 via-pink-400 to-purple-600 rounded-full blur-lg opacity-60 group-hover:opacity-100 transition-opacity duration-300 animate-pulse scale-150"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full blur-md opacity-40 group-hover:opacity-70 transition-opacity duration-300 animate-pulse delay-300 scale-125"></div>
+
+                  {/* Main badge container */}
+                  <div className="relative flex items-center justify-center w-10 h-10 bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 text-white text-sm font-bold rounded-full shadow-2xl transform transition-all duration-500 group-hover:scale-125 group-hover:rotate-12">
+                    {/* Inner shine effect */}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-white/40 via-transparent to-transparent rounded-full"></div>
+
+                    {/* Floating sparkles */}
+                    <Sparkles className="absolute -top-1 -right-1 w-3 h-3 text-yellow-300 opacity-80 animate-bounce" />
+                    <Award className="absolute top-0.5 left-0.5 w-2.5 h-2.5 text-yellow-300 opacity-60" />
+
+                    {/* Badge count */}
+                    <span className="relative z-10 font-black">{badgeCount}</span>
+
+                    {/* Animated sparkle effects */}
+                    <div className="absolute -top-2 -right-2 w-1.5 h-1.5 bg-yellow-300 rounded-full animate-ping"></div>
+                    <div className="absolute -bottom-2 -left-2 w-1 h-1 bg-pink-300 rounded-full animate-pulse delay-700"></div>
+                    <div className="absolute top-0 right-0 w-0.5 h-0.5 bg-cyan-300 rounded-full animate-pulse delay-1000"></div>
+                  </div>
+
+                  {/* Enhanced tooltip */}
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 px-3 py-2 bg-black/90 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap z-20 shadow-2xl">
+                    <div className="flex items-center gap-1">
+                      <Trophy className="w-3 h-3 text-yellow-400" />
+                      <span className="font-semibold">
+                        {badgeCount} Badge{badgeCount !== 1 ? "s" : ""} Earned
+                      </span>
+                    </div>
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black/90"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <p className="text-slate-600 dark:text-slate-400 font-medium">Rower</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Main Progress Card */}
       <Card className="mb-6">
@@ -125,10 +218,12 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
         <Card>
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center mb-2">
-              <Calendar className="h-5 w-5 text-orange-600" />
+              <Trophy className="h-5 w-5 text-yellow-600" />
             </div>
-            <p className="text-2xl font-bold text-slate-800 dark:text-slate-200">{daysLeft}</p>
-            <p className="text-xs text-slate-600 dark:text-slate-400">Days Left</p>
+            <p className="text-2xl font-bold text-slate-800 dark:text-slate-200">
+              {currentRank > 0 ? `#${currentRank}` : "N/A"}
+            </p>
+            <p className="text-xs text-slate-600 dark:text-slate-400">Current Rank</p>
           </CardContent>
         </Card>
 

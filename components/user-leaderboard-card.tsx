@@ -14,18 +14,18 @@ export function UserLeaderboardCard({ user, rank }: UserLeaderboardCardProps) {
 
   return (
     <Link href={`/profile/${user.id}`}>
-      <Card className="hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors">
+      <Card className="hover:bg-slate-50 dark:hover:bg-slate-900" hover="lift">
         <CardContent className="p-4">
           <div className="flex items-center">
             <div className="flex-shrink-0 mr-4">
               <div className="relative">
-                <Avatar className="h-12 w-12">
+                <Avatar className="h-12 w-12" hover="rotate">
                   <AvatarImage src={user.profileImage || "/placeholder.svg"} alt={user.name} />
                   <AvatarFallback className="bg-blue-100 text-blue-800">
                     {user.name.substring(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div className="absolute -bottom-1 -right-1 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                <div className="absolute -bottom-1 -right-1 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium transition-transform duration-300 hover:scale-125 hover:rotate-12">
                   {rank}
                 </div>
               </div>
