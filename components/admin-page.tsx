@@ -2,16 +2,19 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { useLeaderboardData } from "@/hooks/use-leaderboard-data"
-import { Shield, Minus, RotateCcw, Eye, EyeOff, AlertTriangle } from "lucide-react"
+import { Shield, Minus, RotateCcw, Eye, EyeOff, AlertTriangle, Camera, User } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { doc, updateDoc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 
 export default function AdminPage() {
   const { toast } = useToast()
@@ -21,8 +24,11 @@ export default function AdminPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [selectedRower, setSelectedRower] = useState("")
   const [metersToSubtract, setMetersToSubtract] = useState("")
+  const [meterOperation, setMeterOperation] = useState<"add" | "subtract">("subtract")
   const [resetClickCount, setResetClickCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
+  const [isUploadingProfile, setIsUploadingProfile] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const ADMIN_PASSWORD = "diddyparty"
   const RESET_CLICKS_REQUIRED = 20
@@ -66,11 +72,11 @@ export default function AdminPage() {
     })
   }
 
-  const handleSubtractMeters = async () => {
+  const handleMeterOperation = async () => {
     if (!selectedRower || !metersToSubtract) {
       toast({
         title: "Missing Information",
-        description: "Please select a rower and enter meters to subtract",
+        description: "Please select a rower and enter meters",
         variant: "destructive",
       })
       return
@@ -92,16 +98,86 @@ export default function AdminPage() {
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
     const rowerName = leaderboardData?.find((user) => user.id === selectedRower)?.name || "Unknown"
+    const operationText = meterOperation === "add" ? "Added" : "Removed"
 
     toast({
-      title: "Meters Subtracted",
-      description: `Removed ${new Intl.NumberFormat().format(meters)}m from ${rowerName}`,
+      title: `Meters ${meterOperation === "add" ? "Added" : "Subtracted"}`,
+      description: `${operationText} ${new Intl.NumberFormat().format(meters)}m ${meterOperation === "add" ? "to" : "from"} ${rowerName}`,
     })
 
     // Reset form
     setSelectedRower("")
     setMetersToSubtract("")
     setIsLoading(false)
+  }
+
+  const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !selectedRower) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please select an image file (JPEG, PNG, etc.)",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select an image smaller than 5MB",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsUploadingProfile(true)
+
+    try {
+      // Convert file to base64 for storage
+      const reader = new FileReader()
+      reader.onload = async (e) => {
+        const base64String = e.target?.result as string
+        
+        // Update the user document in Firestore
+        const userRef = doc(db, "users", selectedRower)
+        await updateDoc(userRef, {
+          profileImage: base64String
+        })
+
+        const rowerName = leaderboardData?.find((user) => user.id === selectedRower)?.name || "Unknown"
+
+        toast({
+          title: "Profile picture updated",
+          description: `${rowerName}'s profile picture has been successfully updated!`,
+        })
+
+        // Reset form
+        setSelectedRower("")
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ""
+        }
+      }
+      
+      reader.readAsDataURL(file)
+    } catch (error) {
+      console.error("Error uploading profile picture:", error)
+      toast({
+        title: "Upload failed",
+        description: "Failed to update profile picture. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUploadingProfile(false)
+    }
+  }
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click()
   }
 
   const handleResetClick = () => {
@@ -202,53 +278,122 @@ export default function AdminPage() {
       </div>
 
       <div className="space-y-6">
-        {/* Subtract Meters Card */}
+        {/* Adjust Profile Card */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Minus className="h-5 w-5 text-orange-600" />
-              Subtract Meters
+              <User className="h-5 w-5 text-blue-600" />
+              Adjust Profile
             </CardTitle>
-            <CardDescription>Remove meters from a rower's total score</CardDescription>
+            <CardDescription>Modify a rower's profile picture or subtract meters from their score</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Select Rower</Label>
-                <Select value={selectedRower} onValueChange={setSelectedRower}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose a rower" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {leaderboardData?.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.name} - {new Intl.NumberFormat().format(user.totalMeters)}m
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="meters">Meters to Subtract</Label>
-                <Input
-                  id="meters"
-                  type="number"
-                  min="1"
-                  placeholder="e.g., 5000"
-                  value={metersToSubtract}
-                  onChange={(e) => setMetersToSubtract(e.target.value)}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label>Select Rower</Label>
+              <Select value={selectedRower} onValueChange={setSelectedRower}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a rower" />
+                </SelectTrigger>
+                <SelectContent>
+                  {leaderboardData?.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.name} - {new Intl.NumberFormat().format(user.totalMeters)}m
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            <Button
-              onClick={handleSubtractMeters}
-              disabled={isLoading || !selectedRower || !metersToSubtract}
-              className="w-full bg-orange-600 hover:bg-orange-700"
-            >
-              {isLoading ? "Processing..." : "Subtract Meters"}
-            </Button>
+            <Tabs defaultValue="profile" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="profile">Profile Picture</TabsTrigger>
+                <TabsTrigger value="meters">Subtract Meters</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="profile" className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Profile Picture</Label>
+                  <Button
+                    variant="outline"
+                    onClick={triggerFileInput}
+                    disabled={isUploadingProfile || !selectedRower}
+                    className="w-full text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950"
+                  >
+                    {isUploadingProfile ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                    ) : (
+                      <Camera className="h-4 w-4 mr-2" />
+                    )}
+                    {isUploadingProfile ? "Uploading..." : "Change Profile Picture"}
+                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleProfilePictureUpload}
+                    className="hidden"
+                  />
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Select an image file (JPEG, PNG, etc.) under 5MB
+                  </p>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="meters" className="space-y-4">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Operation</Label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          value="add"
+                          checked={meterOperation === "add"}
+                          onChange={(e) => setMeterOperation(e.target.value as "add" | "subtract")}
+                          className="text-blue-600"
+                        />
+                        <span className="text-sm font-medium">Add Meters</span>
+                      </label>
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          value="subtract"
+                          checked={meterOperation === "subtract"}
+                          onChange={(e) => setMeterOperation(e.target.value as "add" | "subtract")}
+                          className="text-orange-600"
+                        />
+                        <span className="text-sm font-medium">Subtract Meters</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="meters">Meters to {meterOperation === "add" ? "Add" : "Subtract"}</Label>
+                    <Input
+                      id="meters"
+                      type="number"
+                      min="1"
+                      placeholder={`e.g., 5000`}
+                      value={metersToSubtract}
+                      onChange={(e) => setMetersToSubtract(e.target.value)}
+                    />
+                  </div>
+
+                  <Button
+                    onClick={handleMeterOperation}
+                    disabled={isLoading || !selectedRower || !metersToSubtract}
+                    className={cn(
+                      "w-full",
+                      meterOperation === "add" 
+                        ? "bg-green-600 hover:bg-green-700" 
+                        : "bg-orange-600 hover:bg-orange-700"
+                    )}
+                  >
+                    {isLoading ? "Processing..." : `${meterOperation === "add" ? "Add" : "Subtract"} Meters`}
+                  </Button>
+                </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 

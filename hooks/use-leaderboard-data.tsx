@@ -180,7 +180,7 @@ export function useLeaderboardData() {
           const userData: UserData = {
             id: doc.id,
             name: firestoreData.username || "Unknown User",
-            profileImage: "/placeholder.png", // You can add profile image support later
+            profileImage: firestoreData.profileImage || "/placeholder.png",
             totalMeters,
             dailyMeters,
             weeklyMeters,

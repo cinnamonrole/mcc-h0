@@ -47,7 +47,7 @@ export default function TopPerformersCard() {
 
           userMap.set(doc.id, {
             name: userName,
-            profileImage: "/placeholder.png"
+            profileImage: firestoreData.profileImage || "/placeholder.png"
           })
 
           // Collect all activities with user info

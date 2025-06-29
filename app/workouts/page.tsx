@@ -71,7 +71,7 @@ export default function WorkoutsPage() {
                 id: `${doc.id}-${index}`,
                 userId: doc.id,
                 userName,
-                userProfileImage: "/placeholder.png", // Default placeholder
+                userProfileImage: firestoreData.profileImage || "/placeholder.png",
                 type: (activity.activity?.toLowerCase() || "unknown") as WorkoutType,
                 meters: Number(activity.points) || 0,
                 date: activity.date?.toDate() || new Date(),

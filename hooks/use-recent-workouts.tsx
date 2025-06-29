@@ -40,7 +40,7 @@ export function useRecentWorkouts() {
               const workout: RecentWorkout = {
                 id: `${doc.id}-${index}`,
                 userName,
-                userProfileImage: "/placeholder.png", // Default placeholder
+                userProfileImage: firestoreData.profileImage || "/placeholder.png",
                 type: (activity.activity?.toLowerCase() || "unknown") as WorkoutType,
                 meters: Number(activity.points) || 0,
                 date: activity.date?.toDate() || new Date(),
